@@ -1,66 +1,68 @@
 """
-Turbo Inference Server - High-performance LLM inference engine
+Inferneo - High-performance LLM inference engine
 """
 
-__version__ = "1.0.0"
-__version_tuple__ = (1, 0, 0)
+__version__ = "0.1.0"
+__author__ = "Inferneo Team"
 
-# Core engine imports
-from .core.engine import TurboEngine
-from .core.config import EngineConfig, ServerConfig
+# Core components
+from .core.engine import InferneoEngine
+from .core.enhanced_engine import EnhancedInferneoEngine
+from .core.config import EngineConfig, ServerConfig, ModelConfig
 from .core.scheduler import Scheduler
 from .core.memory_manager import MemoryManager
 from .core.cache_manager import CacheManager
 
-# Model imports
+# Model components
+from .models.registry import ModelRegistry
+from .models.manager import ModelManager
 from .models.base import BaseModel
 from .models.transformers import TransformersModel
-from .models.registry import ModelRegistry
+from .models.onnx.onnx_model import ONNXModel
+from .models.tensorrt.tensorrt_model import TensorRTModel
 
-# Quantization imports
-from .quantization.base import BaseQuantization
-from .quantization.awq import AWQQuantization
-from .quantization.gptq import GPTQQuantization
+# Utility components
+from .models.onnx.converter import ONNXConverter
 
 # Server imports
-from .server.api import APIServer
-from .server.websocket import WebSocketServer
+# from .server.api import APIServer
+# from .server.websocket import WebSocketServer
 
 # Utility imports
-from .utils.metrics import MetricsCollector
-from .utils.logging import setup_logging
-from .utils.security import SecurityManager
+# from .utils.metrics import MetricsCollector
+# from .utils.logging import setup_logging
+# from .utils.security import SecurityManager
 
 # Main exports
 __all__ = [
     # Core
-    "TurboEngine",
-    "EngineConfig", 
-    "ServerConfig",
+    "InferneoEngine",
+    "EnhancedInferneoEngine",
+    "EngineConfig",
+    "ServerConfig", 
+    "ModelConfig",
     "Scheduler",
     "MemoryManager",
     "CacheManager",
     
     # Models
-    "BaseModel",
-    "TransformersModel", 
     "ModelRegistry",
-    
-    # Quantization
-    "BaseQuantization",
-    "AWQQuantization",
-    "GPTQQuantization",
+    "ModelManager",
+    "BaseModel",
+    "TransformersModel",
+    "ONNXModel",
+    "TensorRTModel",
     
     # Server
-    "APIServer",
-    "WebSocketServer",
+    # "APIServer",
+    # "WebSocketServer",
     
     # Utils
-    "MetricsCollector",
-    "setup_logging",
-    "SecurityManager",
+    # "MetricsCollector",
+    # "setup_logging",
+    # "SecurityManager",
     
     # Version
     "__version__",
-    "__version_tuple__",
+    "__author__",
 ] 

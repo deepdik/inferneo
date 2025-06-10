@@ -68,7 +68,7 @@ class CacheManager:
         self._cleanup_task: Optional[asyncio.Task] = None
         self._is_running = False
     
-    def initialize(self):
+    async def initialize(self):
         """Initialize the cache manager"""
         self._is_running = True
         self._start_cleanup_task()
@@ -416,4 +416,7 @@ class CacheManager:
         """Stop the cache manager"""
         self._is_running = False
         if self._cleanup_task:
-            self._cleanup_task.cancel() 
+            self._cleanup_task.cancel()
+    
+    async def cleanup(self):
+        pass 

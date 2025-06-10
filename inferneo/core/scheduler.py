@@ -8,6 +8,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 from enum import Enum
+import logging
 
 from .config import SchedulerConfig
 
@@ -47,7 +48,7 @@ class Scheduler:
     
     def __init__(self, config: SchedulerConfig):
         self.config = config
-        self.logger = None  # Will be set by engine
+        self.logger = logging.getLogger(__name__)
         
         # Request queues
         self._waiting_queue: List[ScheduledRequest] = []
@@ -69,7 +70,7 @@ class Scheduler:
         self._batch_ready_event = asyncio.Event()
         self._stop_event = asyncio.Event()
     
-    def initialize(self):
+    async def initialize(self):
         """Initialize the scheduler"""
         self._is_running = True
         self.logger.info("Scheduler initialized")
@@ -326,4 +327,7 @@ class Scheduler:
     
     def is_running(self) -> bool:
         """Check if scheduler is running"""
-        return self._is_running and not self._stop_event.is_set() 
+        return self._is_running and not self._stop_event.is_set()
+    
+    async def cleanup(self):
+        pass 

@@ -1,8 +1,9 @@
 """
-Turbo Engine - High-performance LLM inference engine
+Inferneo Engine - High-performance LLM inference engine
 """
 
 import asyncio
+import logging
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -17,25 +18,38 @@ from .config import EngineConfig
 from .scheduler import Scheduler
 from .memory_manager import MemoryManager
 from .cache_manager import CacheManager
-from ..models.base import BaseModel
+from ..models.base import BaseModel, GenerationResult
 from ..models.registry import ModelRegistry
-from ..utils.metrics import MetricsCollector
-from ..utils.logging import setup_logging
+# from ..utils.metrics import MetricsCollector
+# from ..utils.logging import setup_logging
 
+# Placeholder classes for missing utils
+class MetricsCollector:
+    """Placeholder for metrics collection"""
+    def __init__(self):
+        pass
+    
+    def record_request(self, *args, **kwargs):
+        pass
+    
+    def record_generation(self, *args, **kwargs):
+        pass
+
+def setup_logging():
+    """Placeholder for logging setup"""
+    pass
 
 @dataclass
 class GenerationRequest:
-    """Represents a generation request"""
-    request_id: str
+    """Request for text generation"""
     prompt: str
     max_tokens: int = 100
     temperature: float = 0.7
-    top_p: float = 1.0
+    top_p: float = 0.9
     top_k: int = 50
-    stop_sequences: Optional[List[str]] = None
+    stop_tokens: Optional[List[str]] = None
     stream: bool = False
-    priority: int = 0
-    created_at: float = field(default_factory=time.time)
+    request_id: Optional[str] = None
 
 
 @dataclass
@@ -50,414 +64,240 @@ class GenerationResponse:
     created_at: float = field(default_factory=time.time)
 
 
-class TurboEngine:
+class InferneoEngine:
     """
     High-performance LLM inference engine with advanced optimizations
     """
     
     def __init__(self, config: EngineConfig):
         self.config = config
-        self.logger = setup_logging(__name__)
+        self.logger = logging.getLogger(__name__)
         
         # Core components
-        self.scheduler = Scheduler(config.scheduler)
-        self.memory_manager = MemoryManager(config.memory)
-        self.cache_manager = CacheManager()
+        self.scheduler = Scheduler(config)
+        self.memory_manager = MemoryManager(config)
+        self.cache_manager = CacheManager(config)
+        self.model_registry = ModelRegistry()
         self.metrics = MetricsCollector()
         
         # Model and tokenizer
-        self.model: Optional[BaseModel] = None
+        self.current_model: Optional[BaseModel] = None
         self.tokenizer: Optional[AutoTokenizer] = None
         
-        # State management
-        self._is_initialized = False
-        self._is_running = False
-        self._active_requests: Dict[str, GenerationRequest] = {}
-        self._request_queue: asyncio.Queue = asyncio.Queue()
+        # State
+        self.is_running = False
+        self.request_queue: asyncio.Queue = asyncio.Queue()
+        self.active_requests: Dict[str, asyncio.Task] = {}
         
-        # Performance tracking
-        self._total_requests = 0
-        self._total_tokens_generated = 0
-        self._start_time = time.time()
+        # Performance metrics
+        self.total_requests = 0
+        self.total_tokens_generated = 0
+        self.start_time = None
         
-        # Initialize components
-        self._init_components()
-    
-    def _init_components(self):
-        """Initialize engine components"""
-        self.logger.info("Initializing Turbo Engine components...")
-        
-        # Initialize memory manager
-        self.memory_manager.initialize()
-        
-        # Initialize cache manager
-        self.cache_manager.initialize()
-        
-        # Initialize scheduler
-        self.scheduler.initialize()
-        
-        self.logger.info("Turbo Engine components initialized successfully")
+        # Components will be initialized in initialize() method
     
     async def initialize(self):
-        """Initialize the engine and load the model"""
-        if self._is_initialized:
-            return
-            
-        self.logger.info(f"Loading model: {self.config.model}")
-        
-        # Load tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            self.config.tokenizer,
-            trust_remote_code=self.config.trust_remote_code,
-            revision=self.config.revision
-        )
-        
-        if self.tokenizer.pad_token is None:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
-        
-        # Load model
-        model_class = ModelRegistry.get_model_class(self.config.model)
-        self.model = model_class(
-            model_name=self.config.model,
-            config=self.config,
-            tokenizer=self.tokenizer
-        )
-        
-        await self.model.load()
-        
-        # Initialize CUDA graphs if enabled
-        if self.config.enable_cuda_graph:
-            await self._init_cuda_graphs()
-        
-        self._is_initialized = True
-        self.logger.info("Turbo Engine initialized successfully")
+        """Initialize the engine components"""
+        await self._init_components()
     
-    async def _init_cuda_graphs(self):
-        """Initialize CUDA graphs for performance optimization"""
-        if not torch.cuda.is_available():
-            return
-            
-        self.logger.info("Initializing CUDA graphs...")
+    async def _init_components(self):
+        """Initialize engine components"""
+        self.logger.info("Initializing Inferneo Engine components...")
         
-        # Warm up the model with dummy inputs
-        dummy_input = torch.randint(0, self.tokenizer.vocab_size, (1, 64)).cuda()
+        # Initialize core components
+        await self.scheduler.initialize()
+        await self.memory_manager.initialize()
+        await self.cache_manager.initialize()
         
-        with torch.cuda.amp.autocast():
-            with torch.no_grad():
-                for _ in range(3):  # Warm up iterations
-                    _ = self.model.forward(dummy_input)
+        # Load the default model
+        if self.config.model:
+            await self.load_model(self.config.model)
         
-        self.logger.info("CUDA graphs initialized")
+        self.logger.info("Inferneo Engine components initialized successfully")
     
-    async def generate(
-        self,
-        prompts: Union[str, List[str]],
-        max_tokens: int = 100,
-        temperature: float = 0.7,
-        top_p: float = 1.0,
-        top_k: int = 50,
-        stop_sequences: Optional[List[str]] = None,
-        stream: bool = False,
-        priority: int = 0
-    ) -> Union[GenerationResponse, List[GenerationResponse], AsyncGenerator[GenerationResponse, None]]:
-        """
-        Generate text from prompts
+    async def load_model(self, model_name: str) -> BaseModel:
+        """Load a model into the engine"""
+        self.logger.info(f"Loading model: {model_name}")
         
-        Args:
-            prompts: Input prompt(s)
-            max_tokens: Maximum tokens to generate
-            temperature: Sampling temperature
-            top_p: Top-p sampling parameter
-            top_k: Top-k sampling parameter
-            stop_sequences: Sequences to stop generation
-            stream: Whether to stream the response
-            priority: Request priority (higher = more important)
+        # Check if model is already loaded
+        if self.current_model and self.current_model.name == model_name:
+            return self.current_model
             
-        Returns:
-            Generation response(s) or async generator for streaming
-        """
-        if not self._is_initialized:
-            await self.initialize()
+        # Get model from registry
+        model = self.model_registry.get_model(model_name)
+        if not model:
+            raise ValueError(f"Model {model_name} not found in registry")
+            
+        # Initialize model
+        await model.initialize(self.config)
         
-        # Handle single vs multiple prompts
-        if isinstance(prompts, str):
-            prompts = [prompts]
-            single_response = True
-        else:
-            single_response = False
+        # Update current model
+        if self.current_model:
+            await self.current_model.cleanup()
+        self.current_model = model
         
-        # Create requests
-        requests = []
-        for prompt in prompts:
-            request_id = str(uuid.uuid4())
-            request = GenerationRequest(
-                request_id=request_id,
-                prompt=prompt,
-                max_tokens=max_tokens,
-                temperature=temperature,
-                top_p=top_p,
-                top_k=top_k,
-                stop_sequences=stop_sequences,
-                stream=stream,
-                priority=priority
-            )
-            requests.append(request)
-        
-        # Process requests
-        if stream:
-            return self._generate_stream(requests[0])
-        else:
-            responses = await self._generate_batch(requests)
-            return responses[0] if single_response else responses
-    
-    async def _generate_batch(self, requests: List[GenerationRequest]) -> List[GenerationResponse]:
-        """Generate responses for a batch of requests"""
-        responses = []
-        
-        for request in requests:
-            # Check cache first
-            cache_key = self._get_cache_key(request)
-            cached_response = self.cache_manager.get(cache_key)
-            
-            if cached_response:
-                responses.append(cached_response)
-                continue
-            
-            # Add to scheduler
-            await self.scheduler.add_request(request)
-            self._active_requests[request.request_id] = request
-            self._total_requests += 1
-        
-        # Process requests
-        while self._active_requests:
-            # Get next batch from scheduler
-            batch = await self.scheduler.get_next_batch()
-            
-            if not batch:
-                await asyncio.sleep(0.001)  # Small delay
-                continue
-            
-            # Generate responses
-            batch_responses = await self._process_batch(batch)
-            
-            # Update responses
-            for response in batch_responses:
-                responses.append(response)
-                self._active_requests.pop(response.request_id, None)
-                
-                # Cache response
-                cache_key = self._get_cache_key(self._active_requests[response.request_id])
-                self.cache_manager.set(cache_key, response)
-        
-        return responses
-    
-    async def _generate_stream(self, request: GenerationRequest) -> AsyncGenerator[GenerationResponse, None]:
-        """Generate streaming response for a single request"""
-        # Add to scheduler
-        await self.scheduler.add_request(request)
-        self._active_requests[request.request_id] = request
-        self._total_requests += 1
-        
-        generated_text = ""
-        generated_tokens = []
-        
-        while len(generated_tokens) < request.max_tokens:
-            # Get next token
-            batch = await self.scheduler.get_next_batch()
-            
-            if not batch or request.request_id not in [r.request_id for r in batch]:
-                await asyncio.sleep(0.001)
-                continue
-            
-            # Process single request
-            token = await self._generate_next_token(request)
-            
-            if token is None:
-                break
-            
-            generated_tokens.append(token)
-            generated_text += self.tokenizer.decode([token])
-            
-            # Check stop sequences
-            if request.stop_sequences:
-                for stop_seq in request.stop_sequences:
-                    if stop_seq in generated_text:
-                        break
-                else:
-                    continue
-                break
-            
-            # Yield partial response
-            response = GenerationResponse(
-                request_id=request.request_id,
-                text=generated_text,
-                tokens=generated_tokens,
-                finish_reason="length" if len(generated_tokens) >= request.max_tokens else "stop"
-            )
-            
-            yield response
-        
-        # Remove from active requests
-        self._active_requests.pop(request.request_id, None)
-    
-    async def _process_batch(self, batch: List[GenerationRequest]) -> List[GenerationResponse]:
-        """Process a batch of requests"""
-        if not batch:
-            return []
-        
-        # Prepare inputs
-        input_ids = []
-        attention_masks = []
-        
-        for request in batch:
-            tokens = self.tokenizer.encode(request.prompt, return_tensors="pt")
-            input_ids.append(tokens)
-            attention_masks.append(torch.ones_like(tokens))
-        
-        # Pad sequences
-        max_len = max(len(ids[0]) for ids in input_ids)
-        padded_input_ids = []
-        padded_attention_masks = []
-        
-        for ids, mask in zip(input_ids, attention_masks):
-            padding_len = max_len - len(ids[0])
-            if padding_len > 0:
-                padded_ids = torch.cat([ids, torch.zeros(1, padding_len, dtype=ids.dtype)], dim=1)
-                padded_mask = torch.cat([mask, torch.zeros(1, padding_len, dtype=mask.dtype)], dim=1)
-            else:
-                padded_ids = ids
-                padded_mask = mask
-            
-            padded_input_ids.append(padded_ids)
-            padded_attention_masks.append(padded_mask)
-        
-        # Stack tensors
-        input_ids = torch.cat(padded_input_ids, dim=0).cuda()
-        attention_mask = torch.cat(padded_attention_masks, dim=0).cuda()
-        
-        # Generate
-        with torch.no_grad():
-            outputs = await self.model.generate(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                max_new_tokens=max(r.max_tokens for r in batch),
-                temperature=batch[0].temperature,
-                top_p=batch[0].top_p,
-                top_k=batch[0].top_k,
-                do_sample=True,
-                pad_token_id=self.tokenizer.pad_token_id,
-                eos_token_id=self.tokenizer.eos_token_id
-            )
-        
-        # Decode responses
-        responses = []
-        for i, request in enumerate(batch):
-            input_len = len(self.tokenizer.encode(request.prompt))
-            generated_tokens = outputs[i, input_len:].tolist()
-            
-            # Remove padding tokens
-            generated_tokens = [t for t in generated_tokens if t != self.tokenizer.pad_token_id]
-            
-            # Decode text
-            generated_text = self.tokenizer.decode(generated_tokens, skip_special_tokens=True)
-            
-            # Check stop sequences
-            finish_reason = "length"
-            if request.stop_sequences:
-                for stop_seq in request.stop_sequences:
-                    if stop_seq in generated_text:
-                        generated_text = generated_text.split(stop_seq)[0]
-                        finish_reason = "stop"
-                        break
-            
-            response = GenerationResponse(
-                request_id=request.request_id,
-                text=generated_text,
-                tokens=generated_tokens,
-                finish_reason=finish_reason,
-                usage={
-                    "prompt_tokens": input_len,
-                    "completion_tokens": len(generated_tokens),
-                    "total_tokens": input_len + len(generated_tokens)
-                }
-            )
-            
-            responses.append(response)
-            self._total_tokens_generated += len(generated_tokens)
-        
-        return responses
-    
-    async def _generate_next_token(self, request: GenerationRequest) -> Optional[int]:
-        """Generate next token for streaming"""
-        # This is a simplified version - in practice, you'd want to maintain
-        # KV cache state and generate token by token
-        tokens = self.tokenizer.encode(request.prompt, return_tensors="pt").cuda()
-        
-        with torch.no_grad():
-            outputs = self.model.forward(tokens)
-            logits = outputs.logits[:, -1, :]
-            
-            # Apply sampling
-            if request.temperature > 0:
-                logits = logits / request.temperature
-            
-            if request.top_p < 1.0:
-                # Top-p sampling
-                sorted_logits, sorted_indices = torch.sort(logits, descending=True)
-                cumulative_probs = torch.cumsum(torch.softmax(sorted_logits, dim=-1), dim=-1)
-                sorted_indices_to_remove = cumulative_probs > request.top_p
-                sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
-                sorted_indices_to_remove[..., 0] = 0
-                indices_to_remove = sorted_indices_to_remove.scatter(1, sorted_indices, sorted_indices_to_remove)
-                logits[indices_to_remove] = float('-inf')
-            
-            # Sample token
-            probs = torch.softmax(logits, dim=-1)
-            token = torch.multinomial(probs, 1).item()
-            
-            return token
-    
-    def _get_cache_key(self, request: GenerationRequest) -> str:
-        """Generate cache key for request"""
-        import hashlib
-        
-        key_data = f"{request.prompt}:{request.max_tokens}:{request.temperature}:{request.top_p}:{request.top_k}"
-        return hashlib.md5(key_data.encode()).hexdigest()
+        self.logger.info(f"Model {model_name} loaded successfully")
+        return model
     
     async def start(self):
-        """Start the engine"""
-        if not self._is_initialized:
-            await self.initialize()
+        """Start the inference engine"""
+        if self.is_running:
+            return
+            
+        await self.initialize()
         
-        self._is_running = True
-        self.logger.info("Turbo Engine started")
+        # Start background tasks
+        self.request_processor_task = asyncio.create_task(self._process_requests())
+        self.metrics_task = asyncio.create_task(self._collect_metrics())
+        
+        self.is_running = True
+        self.start_time = time.time()
+        self.logger.info("Inferneo Engine initialized successfully")
     
     async def stop(self):
-        """Stop the engine"""
-        self._is_running = False
+        """Stop the inference engine"""
+        if not self.is_running:
+            return
+            
+        self.is_running = False
         
-        # Clear active requests
-        self._active_requests.clear()
+        # Cancel background tasks
+        if hasattr(self, 'request_processor_task'):
+            self.request_processor_task.cancel()
+        if hasattr(self, 'metrics_task'):
+            self.metrics_task.cancel()
+            
+        # Cleanup components
+        if self.current_model:
+            await self.current_model.cleanup()
+        await self.scheduler.cleanup()
+        await self.memory_manager.cleanup()
+        await self.cache_manager.cleanup()
         
-        # Stop scheduler
-        await self.scheduler.stop()
-        
-        self.logger.info("Turbo Engine stopped")
+        self.logger.info("Inferneo Engine stopped")
     
-    def get_stats(self) -> Dict[str, Any]:
-        """Get engine statistics"""
-        uptime = time.time() - self._start_time
+    async def generate(self, request: Union[GenerationRequest, Dict, str]) -> GenerationResult:
+        """
+        Generate text based on the request
         
-        return {
-            "uptime": uptime,
-            "total_requests": self._total_requests,
-            "total_tokens_generated": self._total_tokens_generated,
-            "active_requests": len(self._active_requests),
-            "requests_per_second": self._total_requests / uptime if uptime > 0 else 0,
-            "tokens_per_second": self._total_tokens_generated / uptime if uptime > 0 else 0,
-            "memory_usage": self.memory_manager.get_stats(),
-            "cache_stats": self.cache_manager.get_stats(),
-        }
+        Args:
+            request: GenerationRequest object, dict, or prompt string
+            
+        Returns:
+            GenerationResult with generated text and metadata
+        """
+        if not self.is_running:
+            raise RuntimeError("Engine is not running. Call start() first.")
+            
+        # Convert request to GenerationRequest if needed
+        if isinstance(request, str):
+            request = GenerationRequest(prompt=request)
+        elif isinstance(request, dict):
+            request = GenerationRequest(**request)
+            
+        # Add request ID if not provided
+        if not request.request_id:
+            request.request_id = f"req_{int(time.time() * 1000)}"
+            
+        # Check cache first
+        cache_key = self._generate_cache_key(request)
+        cached_result = await self.cache_manager.get(cache_key)
+        if cached_result:
+            self.logger.debug(f"Cache hit for request {request.request_id}")
+            return cached_result
+            
+        # Submit to scheduler
+        result = await self.scheduler.schedule_generation(request, self.current_model)
+        
+        # Cache the result
+        await self.cache_manager.set(cache_key, result)
+        
+        # Update metrics
+        self.total_requests += 1
+        self.total_tokens_generated += len(result.tokens)
+        
+        return result
+    
+    async def generate_batch(self, requests: List[Union[GenerationRequest, Dict, str]]) -> List[GenerationResult]:
+        """Generate text for multiple requests in batch"""
+        if not self.is_running:
+            raise RuntimeError("Engine is not running. Call start() first.")
+            
+        # Convert requests to GenerationRequest objects
+        processed_requests = []
+        for req in requests:
+            if isinstance(req, str):
+                processed_requests.append(GenerationRequest(prompt=req))
+            elif isinstance(req, dict):
+                processed_requests.append(GenerationRequest(**req))
+            else:
+                processed_requests.append(req)
+                
+        # Submit batch to scheduler
+        results = await self.scheduler.schedule_batch_generation(processed_requests, self.current_model)
+        
+        # Update metrics
+        self.total_requests += len(processed_requests)
+        for result in results:
+            self.total_tokens_generated += len(result.tokens)
+            
+        return results
+    
+    def _generate_cache_key(self, request: GenerationRequest) -> str:
+        """Generate a cache key for the request"""
+        import hashlib
+        content = f"{request.prompt}:{request.max_tokens}:{request.temperature}:{request.top_p}:{request.top_k}"
+        return hashlib.md5(content.encode()).hexdigest()
+    
+    async def _process_requests(self):
+        """Background task to process requests from the queue"""
+        while self.is_running:
+            try:
+                # Process queued requests
+                while not self.request_queue.empty():
+                    request = await self.request_queue.get()
+                    task = asyncio.create_task(self._handle_request(request))
+                    self.active_requests[request.request_id] = task
+                    
+                await asyncio.sleep(0.001)  # Small delay to prevent busy waiting
+                
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                self.logger.error(f"Error in request processor: {e}")
+                
+    async def _handle_request(self, request: GenerationRequest):
+        """Handle a single request"""
+        try:
+            result = await self.generate(request)
+            # Handle result (e.g., send to client, store in database, etc.)
+        except Exception as e:
+            self.logger.error(f"Error handling request {request.request_id}: {e}")
+        finally:
+            if request.request_id in self.active_requests:
+                del self.active_requests[request.request_id]
+                
+    async def _collect_metrics(self):
+        """Background task to collect performance metrics"""
+        while self.is_running:
+            try:
+                # Collect and log metrics
+                if self.start_time:
+                    uptime = time.time() - self.start_time
+                    requests_per_second = self.total_requests / uptime if uptime > 0 else 0
+                    tokens_per_second = self.total_tokens_generated / uptime if uptime > 0 else 0
+                    
+                    self.logger.info(f"Metrics - RPS: {requests_per_second:.2f}, TPS: {tokens_per_second:.2f}")
+                    
+                await asyncio.sleep(60)  # Collect metrics every minute
+                
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                self.logger.error(f"Error collecting metrics: {e}")
+                
+    async def get_stats(self) -> dict:
+        return {}
     
     @asynccontextmanager
     async def context(self):

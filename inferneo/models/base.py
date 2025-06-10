@@ -1,15 +1,36 @@
 """
-Base model interface for Turbo Inference Server
+Base model interface for Inferneo
+
+Defines the common interface that all model implementations must follow.
 """
 
 import asyncio
+import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Any
 from dataclasses import dataclass
+from enum import Enum
 
 import torch
 import torch.nn as nn
 from transformers import AutoTokenizer, AutoModelForCausalLM, PreTrainedModel
+
+
+class ModelFormat(Enum):
+    """Supported model formats"""
+    HUGGINGFACE = "huggingface"
+    ONNX = "onnx"
+    TENSORRT = "tensorrt"
+    TORCHSCRIPT = "torchscript"
+    SAFETENSORS = "safetensors"
+
+
+class ModelState(Enum):
+    """Model loading states"""
+    UNLOADED = "unloaded"
+    LOADING = "loading"
+    LOADED = "loaded"
+    ERROR = "error"
 
 
 @dataclass
@@ -27,177 +48,167 @@ class ModelConfig:
 
 @dataclass
 class GenerationConfig:
-    """Generation configuration"""
-    max_new_tokens: int = 100
+    """Configuration for text generation"""
+    max_tokens: int = 100
     temperature: float = 0.7
-    top_p: float = 1.0
+    top_p: float = 0.9
     top_k: int = 50
-    do_sample: bool = True
-    pad_token_id: Optional[int] = None
-    eos_token_id: Optional[int] = None
     repetition_penalty: float = 1.0
-    length_penalty: float = 1.0
-    no_repeat_ngram_size: int = 0
+    stop_tokens: Optional[List[str]] = None
+    stream: bool = False
+
+
+@dataclass
+class GenerationResult:
+    """Result of text generation"""
+    text: str
+    tokens: List[int]
+    finish_reason: str
+    usage: Optional[Dict[str, int]] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
 class BaseModel(ABC):
     """
-    Abstract base class for all models in Turbo Inference Server
+    Abstract base class for all models in Inferneo
+    
+    This class defines the interface that all model implementations
+    must follow, ensuring consistent behavior across different
+    model formats and backends.
     """
     
-    def __init__(self, model_name: str, config: ModelConfig, tokenizer: AutoTokenizer):
-        self.model_name = model_name
+    def __init__(self, name: str, config: Any):
+        self.name = name
         self.config = config
-        self.tokenizer = tokenizer
-        self.model: Optional[PreTrainedModel] = None
-        self._is_loaded = False
+        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        self.state = ModelState.UNLOADED
+        self.tokenizer: Optional[AutoTokenizer] = None
+        self.model: Optional[Any] = None
         
-        # Model metadata
-        self.vocab_size: int = 0
-        self.hidden_size: int = 0
-        self.num_layers: int = 0
-        self.num_attention_heads: int = 0
-        
-        # Performance tracking
-        self.total_forward_passes = 0
-        self.total_generations = 0
-    
     @abstractmethod
-    async def load(self) -> None:
+    async def initialize(self, config: Any) -> None:
         """
-        Load the model into memory
-        
-        This method should be implemented by subclasses to load the specific
-        model type (e.g., HuggingFace, custom, etc.)
-        """
-        pass
-    
-    @abstractmethod
-    async def generate(
-        self,
-        input_ids: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
-        generation_config: Optional[GenerationConfig] = None,
-        **kwargs
-    ) -> torch.Tensor:
-        """
-        Generate text from input tokens
+        Initialize the model and load it into memory
         
         Args:
-            input_ids: Input token IDs
-            attention_mask: Attention mask
-            generation_config: Generation configuration
-            **kwargs: Additional arguments
-            
-        Returns:
-            Generated token IDs
+            config: Configuration object for the model
         """
         pass
-    
+        
     @abstractmethod
-    def forward(
-        self,
-        input_ids: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
-        **kwargs
-    ) -> Any:
+    async def generate(self, prompt: str, config: Optional[GenerationConfig] = None) -> GenerationResult:
         """
-        Forward pass through the model
+        Generate text from a prompt
         
         Args:
-            input_ids: Input token IDs
-            attention_mask: Attention mask
-            **kwargs: Additional arguments
+            prompt: Input text prompt
+            config: Generation configuration (optional)
             
         Returns:
-            Model output
+            GenerationResult with generated text and metadata
         """
         pass
-    
-    def get_model_info(self) -> Dict[str, Any]:
-        """Get model information"""
+        
+    @abstractmethod
+    async def generate_batch(self, prompts: List[str], config: Optional[GenerationConfig] = None) -> List[GenerationResult]:
+        """
+        Generate text for multiple prompts in batch
+        
+        Args:
+            prompts: List of input text prompts
+            config: Generation configuration (optional)
+            
+        Returns:
+            List of GenerationResult objects
+        """
+        pass
+        
+    @abstractmethod
+    async def cleanup(self) -> None:
+        """
+        Clean up model resources and unload from memory
+        """
+        pass
+        
+    def get_info(self) -> Dict[str, Any]:
+        """
+        Get model information and metadata
+        
+        Returns:
+            Dictionary with model information
+        """
         return {
-            "model_name": self.model_name,
-            "vocab_size": self.vocab_size,
-            "hidden_size": self.hidden_size,
-            "num_layers": self.num_layers,
-            "num_attention_heads": self.num_attention_heads,
-            "max_length": self.config.max_length,
-            "dtype": str(self.config.dtype),
-            "device": self.config.device,
-            "is_loaded": self._is_loaded,
+            "name": self.name,
+            "state": self.state.value,
+            "format": self.get_format().value,
+            "config": self.config.__dict__ if hasattr(self.config, '__dict__') else str(self.config)
         }
-    
-    def get_stats(self) -> Dict[str, Any]:
-        """Get model statistics"""
-        return {
-            "total_forward_passes": self.total_forward_passes,
-            "total_generations": self.total_generations,
-            "model_info": self.get_model_info(),
-        }
-    
+        
+    @abstractmethod
+    def get_format(self) -> ModelFormat:
+        """
+        Get the format of this model
+        
+        Returns:
+            ModelFormat enum value
+        """
+        pass
+        
     def is_loaded(self) -> bool:
-        """Check if model is loaded"""
-        return self._is_loaded
-    
-    async def unload(self) -> None:
-        """Unload the model from memory"""
-        if self.model is not None:
-            del self.model
-            self.model = None
-            self._is_loaded = False
+        """
+        Check if the model is currently loaded
+        
+        Returns:
+            True if model is loaded, False otherwise
+        """
+        return self.state == ModelState.LOADED
+        
+    def get_memory_usage(self) -> Dict[str, float]:
+        """
+        Get current memory usage of the model
+        
+        Returns:
+            Dictionary with memory usage information
+        """
+        if not self.is_loaded():
+            return {"gpu_memory_mb": 0.0, "cpu_memory_mb": 0.0}
             
-            # Clear CUDA cache
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-    
-    def _extract_model_info(self) -> None:
-        """Extract model information from the loaded model"""
-        if self.model is None:
-            return
-        
-        # Try to get model info from config
-        if hasattr(self.model, 'config'):
-            config = self.model.config
-            self.vocab_size = getattr(config, 'vocab_size', 0)
-            self.hidden_size = getattr(config, 'hidden_size', 0)
-            self.num_layers = getattr(config, 'num_hidden_layers', 0)
-            self.num_attention_heads = getattr(config, 'num_attention_heads', 0)
-        
-        # Fallback to tokenizer info
-        if self.vocab_size == 0 and self.tokenizer is not None:
-            self.vocab_size = self.tokenizer.vocab_size
-    
-    def _validate_inputs(self, input_ids: torch.Tensor, 
-                        attention_mask: Optional[torch.Tensor] = None) -> None:
-        """Validate input tensors"""
-        if not isinstance(input_ids, torch.Tensor):
-            raise ValueError("input_ids must be a torch.Tensor")
-        
-        if input_ids.dim() != 2:
-            raise ValueError("input_ids must be 2-dimensional (batch_size, sequence_length)")
-        
-        if attention_mask is not None:
-            if not isinstance(attention_mask, torch.Tensor):
-                raise ValueError("attention_mask must be a torch.Tensor")
+        try:
+            if torch.cuda.is_available() and hasattr(self.model, 'device'):
+                gpu_memory = torch.cuda.memory_allocated(self.model.device) / 1024 / 1024
+            else:
+                gpu_memory = 0.0
+                
+            # Estimate CPU memory (this is approximate)
+            cpu_memory = 0.0
+            if hasattr(self.model, 'num_parameters'):
+                cpu_memory = self.model.num_parameters() * 4 / 1024 / 1024  # 4 bytes per parameter
+                
+            return {
+                "gpu_memory_mb": gpu_memory,
+                "cpu_memory_mb": cpu_memory
+            }
+        except Exception as e:
+            self.logger.warning(f"Could not get memory usage: {e}")
+            return {"gpu_memory_mb": 0.0, "cpu_memory_mb": 0.0}
             
-            if attention_mask.shape != input_ids.shape:
-                raise ValueError("attention_mask shape must match input_ids shape")
-    
-    def _prepare_generation_config(self, 
-                                 generation_config: Optional[GenerationConfig] = None) -> GenerationConfig:
-        """Prepare generation configuration"""
-        if generation_config is None:
-            generation_config = GenerationConfig()
+    async def health_check(self) -> bool:
+        """
+        Perform a health check on the model
         
-        # Set default token IDs if not provided
-        if generation_config.pad_token_id is None:
-            generation_config.pad_token_id = self.tokenizer.pad_token_id
-        
-        if generation_config.eos_token_id is None:
-            generation_config.eos_token_id = self.tokenizer.eos_token_id
-        
-        return generation_config
+        Returns:
+            True if model is healthy, False otherwise
+        """
+        if not self.is_loaded():
+            return False
+            
+        try:
+            # Try to generate a simple response
+            result = await self.generate("test", GenerationConfig(max_tokens=1))
+            return len(result.text) >= 0
+        except Exception as e:
+            self.logger.error(f"Health check failed: {e}")
+            return False
 
 
 class ModelLoader:

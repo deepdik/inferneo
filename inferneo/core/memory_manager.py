@@ -7,6 +7,7 @@ import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set, Tuple
 from enum import Enum
+import logging
 
 import torch
 import torch.nn as nn
@@ -199,8 +200,8 @@ class MemoryManager:
     """
     
     def __init__(self, config):
+        self.logger = logging.getLogger(__name__)
         self.config = config
-        self.logger = None  # Will be set by engine
         
         # PagedAttention
         self.paged_attention = PagedAttention(
@@ -234,7 +235,7 @@ class MemoryManager:
             self.max_gpu_memory = 0
             self.gpu_memory_reserved = 0
     
-    def initialize(self):
+    async def initialize(self):
         """Initialize the memory manager"""
         self.logger.info("Memory manager initialized")
         self.logger.info(f"GPU memory: {self.max_gpu_memory / 1024**3:.2f} GB")
@@ -433,4 +434,7 @@ class MemoryManager:
     
     def get_stats(self) -> Dict[str, Any]:
         """Get memory manager statistics"""
-        return self.get_memory_stats() 
+        return self.get_memory_stats()
+
+    async def cleanup(self):
+        pass 

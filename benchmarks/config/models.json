@@ -1,0 +1,75 @@
+{
+  "models": {
+    "gpt2": {
+      "name": "GPT-2",
+      "type": "transformer",
+      "parameters": 124000000,
+      "framework": "huggingface",
+      "path": "../models/huggingface/gpt2",
+      "input_shape": [1, 50],
+      "output_shape": [1, 50, 50257],
+      "dtype": "float32",
+      "batch_sizes": [1, 2, 4, 8, 16, 32],
+      "max_length": 50,
+      "temperature": 0.7,
+      "top_p": 0.9,
+      "description": "GPT-2 124M parameter model for text generation"
+    },
+    "distilgpt2": {
+      "name": "DistilGPT-2",
+      "type": "transformer",
+      "parameters": 82000000,
+      "framework": "huggingface",
+      "path": "../models/huggingface/distilgpt2",
+      "input_shape": [1, 50],
+      "output_shape": [1, 50, 50257],
+      "dtype": "float32",
+      "batch_sizes": [1, 2, 4, 8, 16, 32, 64],
+      "max_length": 50,
+      "temperature": 0.7,
+      "top_p": 0.9,
+      "description": "Distilled version of GPT-2 with 82M parameters"
+    },
+    "dummy_small": {
+      "name": "Dummy Small",
+      "type": "dummy",
+      "parameters": 1000000,
+      "framework": "dummy",
+      "path": "dummy",
+      "input_shape": [1, 10],
+      "output_shape": [1, 10, 1000],
+      "dtype": "float32",
+      "batch_sizes": [1, 2, 4, 8, 16, 32, 64, 128],
+      "latency_ms": 5,
+      "description": "Small dummy model for testing"
+    },
+    "dummy_medium": {
+      "name": "Dummy Medium",
+      "type": "dummy",
+      "parameters": 5000000,
+      "framework": "dummy",
+      "path": "dummy",
+      "input_shape": [1, 20],
+      "output_shape": [1, 20, 2000],
+      "dtype": "float32",
+      "batch_sizes": [1, 2, 4, 8, 16, 32, 64],
+      "latency_ms": 15,
+      "description": "Medium dummy model for testing"
+    },
+    "dummy_large": {
+      "name": "Dummy Large",
+      "type": "dummy",
+      "parameters": 10000000,
+      "framework": "dummy",
+      "path": "dummy",
+      "input_shape": [1, 30],
+      "output_shape": [1, 30, 3000],
+      "dtype": "float32",
+      "batch_sizes": [1, 2, 4, 8, 16, 32],
+      "latency_ms": 30,
+      "description": "Large dummy model for testing"
+    }
+  },
+  "default_models": ["gpt2", "distilgpt2"],
+  "test_models": ["dummy_small", "dummy_medium", "dummy_large"]
+} 

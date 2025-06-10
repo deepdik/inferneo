@@ -1,2 +1,5 @@
 venv/
 .DS_Store
+
+# Ignore only the top-level models directory (not inferneo/models/)
+/models/

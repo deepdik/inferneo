@@ -1,0 +1,76 @@
+{
+  "scenarios": {
+    "latency": {
+      "name": "Latency Benchmark",
+      "description": "Measure end-to-end latency for individual requests",
+      "duration_seconds": 60,
+      "warmup_seconds": 10,
+      "concurrency_levels": [1, 2, 4, 8, 16, 32],
+      "request_rate": "unlimited",
+      "metrics": ["p50", "p95", "p99", "p99_9", "mean", "min", "max"],
+      "priority": "high"
+    },
+    "throughput": {
+      "name": "Throughput Benchmark",
+      "description": "Measure maximum requests per second",
+      "duration_seconds": 120,
+      "warmup_seconds": 20,
+      "concurrency_levels": [1, 2, 4, 8, 16, 32, 64, 128],
+      "request_rate": "max",
+      "metrics": ["rps", "total_requests", "success_rate", "error_rate"],
+      "priority": "high"
+    },
+    "concurrency": {
+      "name": "Concurrency Benchmark",
+      "description": "Test performance under concurrent load",
+      "duration_seconds": 90,
+      "warmup_seconds": 15,
+      "concurrency_levels": [1, 5, 10, 20, 50, 100, 200],
+      "request_rate": "sustained",
+      "metrics": ["latency", "throughput", "error_rate", "timeout_rate"],
+      "priority": "medium"
+    },
+    "batch": {
+      "name": "Batch Processing Benchmark",
+      "description": "Test batch inference performance",
+      "duration_seconds": 60,
+      "warmup_seconds": 10,
+      "batch_sizes": [1, 2, 4, 8, 16, 32, 64],
+      "concurrency_levels": [1, 2, 4, 8],
+      "metrics": ["batch_latency", "throughput", "efficiency"],
+      "priority": "medium"
+    },
+    "memory": {
+      "name": "Memory Usage Benchmark",
+      "description": "Profile memory usage patterns",
+      "duration_seconds": 180,
+      "warmup_seconds": 30,
+      "concurrency_levels": [1, 4, 8, 16, 32],
+      "sampling_interval_ms": 100,
+      "metrics": ["peak_memory", "average_memory", "memory_per_request"],
+      "priority": "low"
+    },
+    "stress": {
+      "name": "Stress Test",
+      "description": "Extreme load testing",
+      "duration_seconds": 300,
+      "warmup_seconds": 60,
+      "concurrency_levels": [50, 100, 200, 500, 1000],
+      "request_rate": "burst",
+      "metrics": ["stability", "error_rate", "recovery_time"],
+      "priority": "low"
+    },
+    "production": {
+      "name": "Production Simulation",
+      "description": "Real-world production workload simulation",
+      "duration_seconds": 600,
+      "warmup_seconds": 120,
+      "concurrency_levels": [10, 20, 50, 100],
+      "request_patterns": ["mixed", "burst", "steady"],
+      "metrics": ["all"],
+      "priority": "high"
+    }
+  },
+  "default_scenarios": ["latency", "throughput", "concurrency"],
+  "comprehensive_scenarios": ["latency", "throughput", "concurrency", "batch", "memory", "stress", "production"]
+} 

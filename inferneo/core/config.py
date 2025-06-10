@@ -1,14 +1,31 @@
 """
-Configuration system for Turbo Inference Server
+Configuration system for Inferneo
 """
 
 import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
 from pathlib import Path
+from enum import Enum
 
 import torch
 from pydantic import BaseModel, Field
+
+
+class QuantizationMethod(Enum):
+    """Available quantization methods"""
+    NONE = "none"
+    INT8 = "int8"
+    INT4 = "int4"
+    FP16 = "fp16"
+    BF16 = "bf16"
+
+
+class SchedulerType(Enum):
+    """Available scheduler types"""
+    FIFO = "fifo"
+    PRIORITY = "priority"
+    FAIR = "fair"
 
 
 class QuantizationConfig(BaseModel):
@@ -76,108 +93,165 @@ class MonitoringConfig(BaseModel):
 
 
 @dataclass
-class EngineConfig:
-    """Main configuration for the Turbo Engine"""
-    
-    # Model settings
-    model: str
-    tokenizer: Optional[str] = None
-    trust_remote_code: bool = False
-    revision: Optional[str] = None
-    dtype: Union[str, torch.dtype] = "auto"
-    seed: Optional[int] = None
-    
-    # Performance settings
+class ModelConfig:
+    """Configuration for model loading and inference"""
+    model: str = "meta-llama/Llama-2-7b-chat-hf"
     max_model_len: int = 4096
     max_num_seqs: int = 256
     max_num_batched_tokens: int = 8192
-    max_paddings: int = 256
-    
-    # Memory settings
     gpu_memory_utilization: float = 0.9
-    swap_space: int = 4  # GB
-    cpu_offload: bool = False
-    
-    # Quantization
-    quantization: QuantizationConfig = field(default_factory=QuantizationConfig)
-    
-    # Parallel settings
-    parallel: ParallelConfig = field(default_factory=ParallelConfig)
-    
-    # Scheduling
-    scheduler: SchedulerConfig = field(default_factory=SchedulerConfig)
-    
-    # Memory management
-    memory: MemoryConfig = field(default_factory=MemoryConfig)
-    
-    # Advanced settings
-    enable_cuda_graph: bool = True
-    enable_flash_attention: bool = True
-    enable_xformers: bool = True
-    enable_speculative_decoding: bool = False
-    speculative_config: Optional[Dict[str, Any]] = None
-    
-    def __post_init__(self):
-        """Validate and set defaults after initialization"""
-        if self.tokenizer is None:
-            self.tokenizer = self.model
-            
-        if self.dtype == "auto":
-            self.dtype = torch.float16
-            
-        # Set memory config from engine config
-        self.memory.max_model_len = self.max_model_len
-        self.memory.max_num_seqs = self.max_num_seqs
-        self.memory.max_num_batched_tokens = self.max_num_batched_tokens
-        self.memory.gpu_memory_utilization = self.gpu_memory_utilization
-        self.memory.cpu_offload = self.cpu_offload
-        self.memory.swap_space = self.swap_space
-        
-        # Set scheduler config from engine config
-        self.scheduler.max_num_partial_prefills = min(
-            self.scheduler.max_num_partial_prefills, 
-            self.max_num_seqs // 2
-        )
+    quantization: QuantizationMethod = QuantizationMethod.NONE
+    trust_remote_code: bool = True
+    revision: Optional[str] = None
+    tokenizer: Optional[str] = None
 
 
 @dataclass
 class ServerConfig:
-    """Configuration for the HTTP/WebSocket server"""
-    
-    # Server settings
+    """Configuration for the HTTP/gRPC server"""
     host: str = "0.0.0.0"
     port: int = 8000
     workers: int = 1
-    reload: bool = False
+    enable_cors: bool = True
+    api_key: Optional[str] = None
+    rate_limit: int = 1000
+
+
+@dataclass
+class MonitoringConfig:
+    """Configuration for monitoring and metrics"""
+    metrics_port: int = 9090
+    log_level: str = "INFO"
+    enable_prometheus: bool = True
+    enable_health_checks: bool = True
+    health_check_interval: int = 30
+
+
+@dataclass
+class EngineConfig:
+    """Main configuration for the Inferneo Engine"""
     
-    # Security
-    security: SecurityConfig = field(default_factory=SecurityConfig)
+    # Model configuration
+    model: str = "meta-llama/Llama-2-7b-chat-hf"
+    max_model_len: int = 4096
+    max_num_seqs: int = 256
+    max_num_batched_tokens: int = 8192
+    gpu_memory_utilization: float = 0.9
+    quantization: QuantizationMethod = QuantizationMethod.NONE
+    trust_remote_code: bool = True
+    revision: Optional[str] = None
+    tokenizer: Optional[str] = None
     
-    # Monitoring
-    monitoring: MonitoringConfig = field(default_factory=MonitoringConfig)
+    # Server configuration
+    host: str = "0.0.0.0"
+    port: int = 8000
+    workers: int = 1
+    enable_cors: bool = True
+    api_key: Optional[str] = None
+    rate_limit: int = 1000
     
-    # API settings
-    enable_openai_compatibility: bool = True
-    enable_websocket: bool = True
-    enable_streaming: bool = True
+    # Monitoring configuration
+    metrics_port: int = 9090
+    log_level: str = "INFO"
+    enable_prometheus: bool = True
+    enable_health_checks: bool = True
+    health_check_interval: int = 30
     
-    # Rate limiting
-    rate_limit_enabled: bool = True
-    rate_limit_window: int = 60  # seconds
-    rate_limit_max_requests: int = 1000
+    # Performance settings
+    enable_cuda_graph: bool = True
+    enable_paged_attention: bool = True
+    enable_speculative_decoding: bool = True
+    enable_kv_cache: bool = True
+    max_workers: int = 4
     
-    # Caching
-    enable_response_cache: bool = True
-    cache_ttl: int = 3600  # seconds
-    cache_max_size: int = 10000
+    # Memory settings
+    max_memory_gb: float = 16.0
+    memory_fraction: float = 0.9
+    
+    # Cache settings
+    cache_size: int = 1000
+    cache_ttl: int = 3600
+    
+    # Scheduler settings
+    scheduler_type: SchedulerType = SchedulerType.FAIR
+    max_batch_size: int = 32
+    max_wait_time: float = 0.1
     
     def __post_init__(self):
-        """Validate configuration after initialization"""
-        if self.workers > 1 and self.reload:
-            raise ValueError("Cannot use reload=True with multiple workers")
-            
-        if self.security.rate_limit > 0:
-            self.rate_limit_max_requests = self.security.rate_limit
+        """Load configuration from environment variables"""
+        # Model settings
+        self.model = os.getenv("INFERNEO_MODEL", self.model)
+        self.max_model_len = int(os.getenv("INFERNEO_MAX_MODEL_LEN", str(self.max_model_len)))
+        self.max_num_seqs = int(os.getenv("INFERNEO_MAX_NUM_SEQS", str(self.max_num_seqs)))
+        self.max_num_batched_tokens = int(os.getenv("INFERNEO_MAX_BATCHED_TOKENS", str(self.max_num_batched_tokens)))
+        self.gpu_memory_utilization = float(os.getenv("INFERNEO_GPU_MEMORY_UTIL", str(self.gpu_memory_utilization)))
+        self.quantization = QuantizationMethod(os.getenv("INFERNEO_QUANTIZATION", self.quantization.value))
+        
+        # Server settings
+        self.host = os.getenv("INFERNEO_HOST", self.host)
+        self.port = int(os.getenv("INFERNEO_PORT", str(self.port)))
+        self.workers = int(os.getenv("INFERNEO_WORKERS", str(self.workers)))
+        self.api_key = os.getenv("INFERNEO_API_KEY", self.api_key)
+        self.rate_limit = int(os.getenv("INFERNEO_RATE_LIMIT", str(self.rate_limit)))
+        
+        # Monitoring settings
+        self.metrics_port = int(os.getenv("INFERNEO_METRICS_PORT", str(self.metrics_port)))
+        self.log_level = os.getenv("INFERNEO_LOG_LEVEL", self.log_level)
+
+
+def load_config_from_file(config_path: str) -> EngineConfig:
+    """Load configuration from a JSON or YAML file"""
+    import json
+    import yaml
+    
+    with open(config_path, 'r') as f:
+        if config_path.endswith('.json'):
+            config_data = json.load(f)
+        elif config_path.endswith('.yaml') or config_path.endswith('.yml'):
+            config_data = yaml.safe_load(f)
+        else:
+            raise ValueError("Unsupported config file format. Use .json or .yaml")
+    
+    return EngineConfig(**config_data)
+
+
+def save_config_to_file(config: EngineConfig, config_path: str):
+    """Save configuration to a JSON or YAML file"""
+    import json
+    import yaml
+    
+    config_dict = {
+        "model": config.model,
+        "max_model_len": config.max_model_len,
+        "max_num_seqs": config.max_num_seqs,
+        "max_num_batched_tokens": config.max_num_batched_tokens,
+        "gpu_memory_utilization": config.gpu_memory_utilization,
+        "quantization": config.quantization.value,
+        "host": config.host,
+        "port": config.port,
+        "workers": config.workers,
+        "rate_limit": config.rate_limit,
+        "metrics_port": config.metrics_port,
+        "log_level": config.log_level,
+        "enable_cuda_graph": config.enable_cuda_graph,
+        "enable_paged_attention": config.enable_paged_attention,
+        "enable_speculative_decoding": config.enable_speculative_decoding,
+        "max_workers": config.max_workers,
+        "max_memory_gb": config.max_memory_gb,
+        "cache_size": config.cache_size,
+        "cache_ttl": config.cache_ttl,
+        "scheduler_type": config.scheduler_type.value,
+        "max_batch_size": config.max_batch_size,
+        "max_wait_time": config.max_wait_time,
+    }
+    
+    with open(config_path, 'w') as f:
+        if config_path.endswith('.json'):
+            json.dump(config_dict, f, indent=2)
+        elif config_path.endswith('.yaml') or config_path.endswith('.yml'):
+            yaml.dump(config_dict, f, default_flow_style=False)
+        else:
+            raise ValueError("Unsupported config file format. Use .json or .yaml")
 
 
 class ConfigManager:
@@ -200,13 +274,13 @@ class ConfigManager:
         """Load engine configuration"""
         # Load from environment variables
         config = EngineConfig(
-            model=os.getenv("TURBO_MODEL", "meta-llama/Llama-2-7b-chat-hf"),
-            max_model_len=int(os.getenv("TURBO_MAX_MODEL_LEN", "4096")),
-            max_num_seqs=int(os.getenv("TURBO_MAX_NUM_SEQS", "256")),
-            max_num_batched_tokens=int(os.getenv("TURBO_MAX_BATCHED_TOKENS", "8192")),
-            gpu_memory_utilization=float(os.getenv("TURBO_GPU_MEMORY_UTIL", "0.9")),
+            model=os.getenv("INFERNEO_MODEL", "meta-llama/Llama-2-7b-chat-hf"),
+            max_model_len=int(os.getenv("INFERNEO_MAX_MODEL_LEN", "4096")),
+            max_num_seqs=int(os.getenv("INFERNEO_MAX_NUM_SEQS", "256")),
+            max_num_batched_tokens=int(os.getenv("INFERNEO_MAX_BATCHED_TOKENS", "8192")),
+            gpu_memory_utilization=float(os.getenv("INFERNEO_GPU_MEMORY_UTIL", "0.9")),
             quantization=QuantizationConfig(
-                method=os.getenv("TURBO_QUANTIZATION", "none")
+                method=os.getenv("INFERNEO_QUANTIZATION", "none")
             )
         )
         
@@ -215,16 +289,16 @@ class ConfigManager:
     def _load_server_config(self) -> ServerConfig:
         """Load server configuration"""
         config = ServerConfig(
-            host=os.getenv("TURBO_HOST", "0.0.0.0"),
-            port=int(os.getenv("TURBO_PORT", "8000")),
-            workers=int(os.getenv("TURBO_WORKERS", "1")),
+            host=os.getenv("INFERNEO_HOST", "0.0.0.0"),
+            port=int(os.getenv("INFERNEO_PORT", "8000")),
+            workers=int(os.getenv("INFERNEO_WORKERS", "1")),
             security=SecurityConfig(
-                api_key=os.getenv("TURBO_API_KEY"),
-                rate_limit=int(os.getenv("TURBO_RATE_LIMIT", "1000"))
+                api_key=os.getenv("INFERNEO_API_KEY"),
+                rate_limit=int(os.getenv("INFERNEO_RATE_LIMIT", "1000"))
             ),
             monitoring=MonitoringConfig(
-                metrics_port=int(os.getenv("TURBO_METRICS_PORT", "9090")),
-                log_level=os.getenv("TURBO_LOG_LEVEL", "INFO")
+                metrics_port=int(os.getenv("INFERNEO_METRICS_PORT", "9090")),
+                log_level=os.getenv("INFERNEO_LOG_LEVEL", "INFO")
             )
         )
         

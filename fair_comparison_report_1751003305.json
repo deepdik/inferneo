@@ -1,0 +1,1344 @@
+{
+  "timestamp": 1751003108.3462005,
+  "config": {
+    "num_requests": 100,
+    "warmup_requests": 10,
+    "test_prompts": [
+      "The quick brown fox jumps over the lazy dog.",
+      "In a hole in the ground there lived a hobbit.",
+      "It was the best of times, it was the worst of times.",
+      "To be or not to be, that is the question.",
+      "All happy families are alike; each unhappy family is unhappy in its own way."
+    ],
+    "generation_config": {
+      "max_tokens": 50,
+      "temperature": 0.7,
+      "top_p": 0.9
+    }
+  },
+  "results": {
+    "latency": {
+      "inferneo": {
+        "count": 100,
+        "mean": 237.30544805526733,
+        "median": 238.26467990875244,
+        "min": 153.4132957458496,
+        "max": 240.72551727294922,
+        "std": 8.462775108931638,
+        "p50": 238.26467990875244,
+        "p90": 239.01476860046387,
+        "p95": 239.19564485549927,
+        "p99": 239.96052980422974,
+        "errors": 0,
+        "throughput": {
+          "tokens_per_second": 206.4427951464075,
+          "completion_tokens_per_second": 160.08903424396857,
+          "total_tokens": 4899,
+          "total_completion_tokens": 3799,
+          "total_time_seconds": 23.730544805526733
+        }
+      },
+      "triton": {
+        "count": 100,
+        "mean": 241.3321876525879,
+        "median": 246.39558792114258,
+        "min": 38.76352310180664,
+        "max": 248.71826171875,
+        "std": 28.75023196528139,
+        "p50": 246.39558792114258,
+        "p90": 247.3618507385254,
+        "p95": 247.5208878517151,
+        "p99": 247.85768032073975,
+        "errors": 0,
+        "throughput": {
+          "tokens_per_second": 201.1335515255687,
+          "completion_tokens_per_second": 155.55322464503192,
+          "total_tokens": 4854,
+          "total_completion_tokens": 3754,
+          "total_time_seconds": 24.13321876525879
+        }
+      },
+      "raw_data": {
+        "inferneo_latencies": [
+          240.72551727294922,
+          238.2829189300537,
+          238.36374282836914,
+          238.59763145446777,
+          238.45815658569336,
+          238.4350299835205,
+          238.44456672668457,
+          237.5166416168213,
+          238.70587348937988,
+          238.7101650238037,
+          238.33847045898438,
+          238.34848403930664,
+          238.39664459228516,
+          239.1338348388672,
+          238.38186264038086,
+          238.33322525024414,
+          238.48700523376465,
+          239.82810974121094,
+          238.9078140258789,
+          238.57665061950684,
+          238.32011222839355,
+          238.4357452392578,
+          153.4132957458496,
+          238.71779441833496,
+          239.0003204345703,
+          238.68894577026367,
+          239.4125461578369,
+          239.27831649780273,
+          239.14337158203125,
+          239.19129371643066,
+          238.5401725769043,
+          238.3127212524414,
+          238.3430004119873,
+          238.9230728149414,
+          239.04180526733398,
+          238.32964897155762,
+          238.24191093444824,
+          238.8460636138916,
+          239.0117645263672,
+          239.95280265808105,
+          238.2068634033203,
+          239.11547660827637,
+          238.16704750061035,
+          238.48509788513184,
+          237.70928382873535,
+          238.18540573120117,
+          236.74440383911133,
+          238.10052871704102,
+          237.28251457214355,
+          238.30461502075195,
+          237.5009059906006,
+          237.96558380126953,
+          236.9532585144043,
+          237.0131015777588,
+          237.31684684753418,
+          236.6623878479004,
+          237.36882209777832,
+          237.51401901245117,
+          238.19351196289062,
+          238.45791816711426,
+          238.17944526672363,
+          238.0363941192627,
+          237.08105087280273,
+          237.79821395874023,
+          237.5357151031494,
+          237.1826171875,
+          238.42430114746094,
+          237.837553024292,
+          237.0009422302246,
+          236.92941665649414,
+          238.07311058044434,
+          238.59572410583496,
+          237.46442794799805,
+          237.2133731842041,
+          237.06436157226562,
+          237.7626895904541,
+          237.36000061035156,
+          237.4873161315918,
+          238.09456825256348,
+          237.72788047790527,
+          237.64491081237793,
+          237.88762092590332,
+          237.30754852294922,
+          237.54405975341797,
+          237.40386962890625,
+          238.33703994750977,
+          238.67392539978027,
+          238.3718490600586,
+          237.63275146484375,
+          237.96629905700684,
+          237.0140552520752,
+          237.24627494812012,
+          237.6556396484375,
+          237.29586601257324,
+          238.7845516204834,
+          238.02828788757324,
+          238.32201957702637,
+          238.24644088745117,
+          238.3711338043213,
+          238.59691619873047
+        ],
+        "triton_latencies": [
+          246.57511711120605,
+          246.39296531677246,
+          247.31850624084473,
+          246.23966217041016,
+          246.2482452392578,
+          247.4191188812256,
+          246.94347381591797,
+          246.3541030883789,
+          247.80774116516113,
+          247.8489875793457,
+          246.40870094299316,
+          246.3982105255127,
+          247.35236167907715,
+          247.37858772277832,
+          246.8400001525879,
+          247.26629257202148,
+          247.3287582397461,
+          246.4437484741211,
+          246.96111679077148,
+          248.71826171875,
+          246.91200256347656,
+          246.23775482177734,
+          247.28870391845703,
+          246.92249298095703,
+          247.12157249450684,
+          247.33972549438477,
+          246.718168258667,
+          245.34201622009277,
+          246.00791931152344,
+          247.16496467590332,
+          246.65379524230957,
+          247.4651336669922,
+          246.8698024749756,
+          246.51813507080078,
+          38.76352310180664,
+          245.4233169555664,
+          245.15151977539062,
+          245.61548233032227,
+          246.30069732666016,
+          244.9202537536621,
+          246.6888427734375,
+          246.16122245788574,
+          247.08890914916992,
+          247.45845794677734,
+          246.58679962158203,
+          245.53847312927246,
+          246.26874923706055,
+          245.80121040344238,
+          245.5310821533203,
+          245.97716331481934,
+          245.6963062286377,
+          245.78094482421875,
+          245.44405937194824,
+          63.1558895111084,
+          245.8200454711914,
+          245.2676296234131,
+          245.62788009643555,
+          246.87743186950684,
+          246.31857872009277,
+          247.50733375549316,
+          246.95587158203125,
+          246.85907363891602,
+          247.8187084197998,
+          246.7021942138672,
+          246.75655364990234,
+          246.31738662719727,
+          246.30141258239746,
+          245.80669403076172,
+          245.99385261535645,
+          245.67461013793945,
+          245.74923515319824,
+          245.4986572265625,
+          246.53196334838867,
+          245.79405784606934,
+          246.04010581970215,
+          245.3751564025879,
+          245.84126472473145,
+          246.04487419128418,
+          246.37508392333984,
+          245.92018127441406,
+          245.94473838806152,
+          247.3599910736084,
+          164.69430923461914,
+          203.89604568481445,
+          247.26176261901855,
+          246.09136581420898,
+          246.11330032348633,
+          247.19643592834473,
+          246.59347534179688,
+          247.2689151763916,
+          247.77841567993164,
+          247.0529079437256,
+          246.83189392089844,
+          247.09248542785645,
+          246.41966819763184,
+          245.29790878295898,
+          245.91922760009766,
+          246.06013298034668,
+          245.82767486572266,
+          246.5832233428955
+        ],
+        "inferneo_token_counts": [
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 37,
+            "total_tokens": 46
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 31,
+            "total_tokens": 41
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 41,
+            "total_tokens": 53
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 42,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 42,
+            "total_tokens": 56
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 27,
+            "total_tokens": 36
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 34,
+            "total_tokens": 44
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 40,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 45,
+            "total_tokens": 55
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 36,
+            "total_tokens": 50
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 27,
+            "total_tokens": 36
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 35,
+            "total_tokens": 45
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 38,
+            "total_tokens": 50
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 40,
+            "total_tokens": 50
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 36,
+            "total_tokens": 50
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 32,
+            "total_tokens": 41
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 36,
+            "total_tokens": 46
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 40,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 40,
+            "total_tokens": 50
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 45,
+            "total_tokens": 59
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 34,
+            "total_tokens": 43
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 39,
+            "total_tokens": 49
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 23,
+            "total_tokens": 35
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 44,
+            "total_tokens": 54
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 40,
+            "total_tokens": 54
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 33,
+            "total_tokens": 42
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 42,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 34,
+            "total_tokens": 46
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 42,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 44,
+            "total_tokens": 58
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 33,
+            "total_tokens": 42
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 32,
+            "total_tokens": 42
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 38,
+            "total_tokens": 50
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 39,
+            "total_tokens": 49
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 44,
+            "total_tokens": 58
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 32,
+            "total_tokens": 41
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 43,
+            "total_tokens": 53
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 38,
+            "total_tokens": 50
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 42,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 45,
+            "total_tokens": 59
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 30,
+            "total_tokens": 39
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 37,
+            "total_tokens": 47
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 45,
+            "total_tokens": 57
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 34,
+            "total_tokens": 44
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 43,
+            "total_tokens": 57
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 41,
+            "total_tokens": 50
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 30,
+            "total_tokens": 40
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 42,
+            "total_tokens": 54
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 45,
+            "total_tokens": 55
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 41,
+            "total_tokens": 55
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 29,
+            "total_tokens": 38
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 27,
+            "total_tokens": 37
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 45,
+            "total_tokens": 57
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 36,
+            "total_tokens": 46
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 42,
+            "total_tokens": 56
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 39,
+            "total_tokens": 48
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 43,
+            "total_tokens": 53
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 43,
+            "total_tokens": 55
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 43,
+            "total_tokens": 53
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 44,
+            "total_tokens": 58
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 26,
+            "total_tokens": 35
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 43,
+            "total_tokens": 53
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 35,
+            "total_tokens": 47
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 38,
+            "total_tokens": 48
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 35,
+            "total_tokens": 49
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 43,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 27,
+            "total_tokens": 37
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 40,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 45,
+            "total_tokens": 55
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 40,
+            "total_tokens": 54
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 31,
+            "total_tokens": 40
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 39,
+            "total_tokens": 49
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 37,
+            "total_tokens": 49
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 33,
+            "total_tokens": 43
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 40,
+            "total_tokens": 54
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 29,
+            "total_tokens": 38
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 41,
+            "total_tokens": 51
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 43,
+            "total_tokens": 55
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 41,
+            "total_tokens": 51
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 42,
+            "total_tokens": 56
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 41,
+            "total_tokens": 50
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 43,
+            "total_tokens": 53
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 42,
+            "total_tokens": 54
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 30,
+            "total_tokens": 40
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 44,
+            "total_tokens": 58
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 41,
+            "total_tokens": 50
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 32,
+            "total_tokens": 42
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 40,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 36,
+            "total_tokens": 46
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 36,
+            "total_tokens": 50
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 26,
+            "total_tokens": 35
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 34,
+            "total_tokens": 44
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 40,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 40,
+            "total_tokens": 50
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 44,
+            "total_tokens": 58
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 38,
+            "total_tokens": 47
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 42,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 38,
+            "total_tokens": 50
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 38,
+            "total_tokens": 48
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 42,
+            "total_tokens": 56
+          }
+        ],
+        "triton_token_counts": [
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 30,
+            "total_tokens": 39
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 41,
+            "total_tokens": 51
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 34,
+            "total_tokens": 46
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 41,
+            "total_tokens": 51
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 47,
+            "total_tokens": 61
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 29,
+            "total_tokens": 38
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 38,
+            "total_tokens": 48
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 35,
+            "total_tokens": 47
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 41,
+            "total_tokens": 51
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 43,
+            "total_tokens": 57
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 44,
+            "total_tokens": 53
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 37,
+            "total_tokens": 47
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 42,
+            "total_tokens": 54
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 37,
+            "total_tokens": 47
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 40,
+            "total_tokens": 54
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 45,
+            "total_tokens": 54
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 45,
+            "total_tokens": 55
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 38,
+            "total_tokens": 50
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 41,
+            "total_tokens": 51
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 44,
+            "total_tokens": 58
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 43,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 38,
+            "total_tokens": 48
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 33,
+            "total_tokens": 45
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 44,
+            "total_tokens": 54
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 37,
+            "total_tokens": 51
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 31,
+            "total_tokens": 40
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 36,
+            "total_tokens": 46
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 40,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 43,
+            "total_tokens": 53
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 45,
+            "total_tokens": 59
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 34,
+            "total_tokens": 43
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 38,
+            "total_tokens": 48
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 37,
+            "total_tokens": 49
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 39,
+            "total_tokens": 49
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 5,
+            "total_tokens": 19
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 40,
+            "total_tokens": 49
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 46,
+            "total_tokens": 56
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 39,
+            "total_tokens": 51
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 43,
+            "total_tokens": 53
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 39,
+            "total_tokens": 53
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 38,
+            "total_tokens": 47
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 37,
+            "total_tokens": 47
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 41,
+            "total_tokens": 53
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 42,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 44,
+            "total_tokens": 58
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 1,
+            "total_tokens": 10
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 38,
+            "total_tokens": 48
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 41,
+            "total_tokens": 53
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 42,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 41,
+            "total_tokens": 55
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 38,
+            "total_tokens": 47
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 32,
+            "total_tokens": 42
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 40,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 7,
+            "total_tokens": 17
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 44,
+            "total_tokens": 58
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 34,
+            "total_tokens": 43
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 32,
+            "total_tokens": 42
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 39,
+            "total_tokens": 51
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 39,
+            "total_tokens": 49
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 41,
+            "total_tokens": 55
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 37,
+            "total_tokens": 46
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 33,
+            "total_tokens": 43
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 39,
+            "total_tokens": 51
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 43,
+            "total_tokens": 53
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 44,
+            "total_tokens": 58
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 33,
+            "total_tokens": 42
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 44,
+            "total_tokens": 54
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 41,
+            "total_tokens": 53
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 40,
+            "total_tokens": 50
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 45,
+            "total_tokens": 59
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 32,
+            "total_tokens": 41
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 32,
+            "total_tokens": 42
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 45,
+            "total_tokens": 57
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 39,
+            "total_tokens": 49
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 37,
+            "total_tokens": 51
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 39,
+            "total_tokens": 48
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 38,
+            "total_tokens": 48
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 36,
+            "total_tokens": 48
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 44,
+            "total_tokens": 54
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 41,
+            "total_tokens": 55
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 34,
+            "total_tokens": 43
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 34,
+            "total_tokens": 44
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 25,
+            "total_tokens": 37
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 29,
+            "total_tokens": 39
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 39,
+            "total_tokens": 53
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 31,
+            "total_tokens": 40
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 30,
+            "total_tokens": 40
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 29,
+            "total_tokens": 41
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 47,
+            "total_tokens": 57
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 41,
+            "total_tokens": 55
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 21,
+            "total_tokens": 30
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 38,
+            "total_tokens": 48
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 39,
+            "total_tokens": 51
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 47,
+            "total_tokens": 57
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 38,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 9,
+            "completion_tokens": 27,
+            "total_tokens": 36
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 42,
+            "total_tokens": 52
+          },
+          {
+            "prompt_tokens": 12,
+            "completion_tokens": 45,
+            "total_tokens": 57
+          },
+          {
+            "prompt_tokens": 10,
+            "completion_tokens": 37,
+            "total_tokens": 47
+          },
+          {
+            "prompt_tokens": 14,
+            "completion_tokens": 46,
+            "total_tokens": 60
+          }
+        ]
+      }
+    },
+    "concurrency": {
+      "concurrency_1": {
+        "inferneo": {
+          "count": 100,
+          "mean": 236.02314233779907,
+          "p95": 236.84687614440918,
+          "p99": 237.25414752960205,
+          "errors": 0
+        },
+        "triton": {
+          "count": 100,
+          "mean": 243.091778755188,
+          "p95": 246.7841386795044,
+          "p99": 247.55464792251587,
+          "errors": 0
+        }
+      },
+      "concurrency_4": {
+        "inferneo": {
+          "count": 100,
+          "mean": 235.82299947738647,
+          "p95": 236.61950826644897,
+          "p99": 236.79869174957275,
+          "errors": 0
+        },
+        "triton": {
+          "count": 100,
+          "mean": 241.61874532699585,
+          "p95": 246.5031623840332,
+          "p99": 247.24573612213135,
+          "errors": 0
+        }
+      },
+      "concurrency_8": {
+        "inferneo": {
+          "count": 100,
+          "mean": 235.36346435546875,
+          "p95": 236.16935014724731,
+          "p99": 237.0047950744629,
+          "errors": 0
+        },
+        "triton": {
+          "count": 100,
+          "mean": 242.9291534423828,
+          "p95": 246.19210958480835,
+          "p99": 247.00893640518188,
+          "errors": 0
+        }
+      }
+    }
+  },
+  "summary": {
+    "latency_comparison": {
+      "inferneo_mean_latency": 237.30544805526733,
+      "triton_mean_latency": 241.3321876525879,
+      "inferneo_p99_latency": 239.96052980422974,
+      "triton_p99_latency": 247.85768032073975,
+      "latency_ratio": 1.0169685931373256,
+      "faster_system": "Inferneo"
+    },
+    "reliability_comparison": {
+      "inferneo_success_rate": 100.0,
+      "triton_success_rate": 100.0,
+      "inferneo_errors": 0,
+      "triton_errors": 0
+    },
+    "overall_assessment": {
+      "winner": "Inferneo",
+      "score": "Inferneo 2 - Triton 1",
+      "notes": "Fair comparison with identical test conditions"
+    }
+  }
+}

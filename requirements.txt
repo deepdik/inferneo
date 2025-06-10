@@ -2,29 +2,68 @@
 torch>=2.0.0
 transformers>=4.30.0
 accelerate>=0.20.0
-datasets>=2.10.0
+datasets>=2.12.0
+tokenizers>=0.13.0
+
+# ONNX Runtime for optimized inference
+onnxruntime>=1.15.0
+onnxruntime-gpu>=1.15.0  # For GPU acceleration
+
+# TensorRT for NVIDIA GPU optimization
+# tensorrt>=8.6.0  # Uncomment if TensorRT is available
+# pycuda>=2022.1  # Uncomment if TensorRT is available
+
+# Performance and optimization
+numpy>=1.24.0
+scipy>=1.10.0
+psutil>=5.9.0
+GPUtil>=1.4.0
+
+# Async and networking
+aiohttp>=3.8.0
+asyncio-mqtt>=0.11.0
+websockets>=11.0.0
+
+# Monitoring and metrics
+prometheus-client>=0.17.0
+psutil>=5.9.0
+
+# Utilities
+pydantic>=2.0.0
+python-dotenv>=1.0.0
+click>=8.1.0
+rich>=13.0.0
+tqdm>=4.65.0
+
+# Development and testing
+pytest>=7.3.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+flake8>=6.0.0
+mypy>=1.3.0
+
+# Optional: For advanced features
+# sentencepiece>=0.1.99  # For some tokenizers
+# protobuf>=4.23.0  # For ONNX
+# onnx>=1.14.0  # For ONNX model manipulation
 
 # Server and API
 fastapi>=0.100.0
 uvicorn[standard]>=0.20.0
-pydantic>=2.0.0
 grpcio>=1.50.0
 grpcio-tools>=1.50.0
 
 # Async and concurrency
-asyncio-mqtt>=0.11.0
 aiofiles>=23.0.0
 
 # Monitoring and observability
-prometheus-client>=0.17.0
 opentelemetry-api>=1.20.0
 opentelemetry-sdk>=1.20.0
 opentelemetry-instrumentation-fastapi>=0.40b0
+structlog>=23.2.0
 
 # Memory and performance
-psutil>=5.9.0
-numpy>=1.24.0
-scipy>=1.10.0
+scipy>=1.11.0
 
 # CUDA and GPU
 nvidia-ml-py>=11.0.0
@@ -35,38 +74,28 @@ bitsandbytes>=0.41.0
 auto-gptq>=0.4.0
 
 # Utilities
-tqdm>=4.65.0
-click>=8.1.0
-rich>=13.0.0
 pyyaml>=6.0
 toml>=0.10.0
 
 # Testing
-pytest>=7.0.0
-pytest-asyncio>=0.21.0
-pytest-cov>=4.0.0
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.12.0
 
 # Development
-black>=23.0.0
 isort>=5.12.0
-flake8>=6.0.0
-mypy>=1.0.0
+mypy>=1.7.0
 
 # Web framework and API
-websockets>=12.0
 safetensors>=0.4.0
-tokenizers>=0.15.0
 
 # Async and concurrency
-asyncio-mqtt>=0.16.0
 aiofiles>=23.2.0
 
 # Monitoring and observability
 structlog>=23.2.0
 
 # Memory and performance
-psutil>=5.9.0
-numpy>=1.24.0
 scipy>=1.11.0
 
 # Quantization support
@@ -94,7 +123,6 @@ tqdm>=4.66.0
 
 # Testing
 pytest>=7.4.0
-pytest-asyncio>=0.21.0
 pytest-cov>=4.1.0
 pytest-mock>=3.12.0
 

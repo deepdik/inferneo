@@ -1,0 +1,69 @@
+{
+  "environments": {
+    "development": {
+      "name": "Development Environment",
+      "description": "Local development setup",
+      "inferneo": {
+        "host": "localhost",
+        "port": 8000,
+        "timeout": 30,
+        "max_retries": 3
+      },
+      "triton": {
+        "host": "localhost",
+        "port": 8000,
+        "timeout": 30,
+        "max_retries": 3
+      },
+      "system": {
+        "cpu_cores": 4,
+        "memory_gb": 8,
+        "gpu": false
+      }
+    },
+    "production": {
+      "name": "Production Environment",
+      "description": "Production server setup",
+      "inferneo": {
+        "host": "localhost",
+        "port": 8000,
+        "timeout": 60,
+        "max_retries": 5
+      },
+      "triton": {
+        "host": "localhost",
+        "port": 8000,
+        "timeout": 60,
+        "max_retries": 5
+      },
+      "system": {
+        "cpu_cores": 16,
+        "memory_gb": 64,
+        "gpu": true
+      }
+    },
+    "benchmark": {
+      "name": "Benchmark Environment",
+      "description": "Dedicated benchmark environment",
+      "inferneo": {
+        "host": "localhost",
+        "port": 8000,
+        "timeout": 120,
+        "max_retries": 10
+      },
+      "triton": {
+        "host": "localhost",
+        "port": 8000,
+        "timeout": 120,
+        "max_retries": 10
+      },
+      "system": {
+        "cpu_cores": 32,
+        "memory_gb": 128,
+        "gpu": true
+      }
+    }
+  },
+  "default_environment": "development",
+  "current_environment": "development"
+} 

@@ -1,0 +1,144 @@
+{
+  "timestamp": 1750999109.6170645,
+  "config": {
+    "num_requests": 200,
+    "warmup_requests": 20,
+    "test_prompts": [
+      "The quick brown fox jumps over the lazy dog.",
+      "In a hole in the ground there lived a hobbit.",
+      "It was the best of times, it was the worst of times.",
+      "To be or not to be, that is the question.",
+      "All happy families are alike; each unhappy family is unhappy in its own way."
+    ]
+  },
+  "results": {
+    "latency": {
+      "inferneo": {
+        "count": 200,
+        "mean": 0.07197737693786621,
+        "median": 0.06890296936035156,
+        "min": 0.06389617919921875,
+        "max": 0.2810955047607422,
+        "std": 0.0178680433267385,
+        "p50": 0.06890296936035156,
+        "p90": 0.0768423080444336,
+        "p95": 0.08589029312133788,
+        "p99": 0.11017084121704035,
+        "errors": 0,
+        "total_time": 0.014599084854125977,
+        "throughput": 13699.488837718223
+      },
+      "triton": {
+        "count": 200,
+        "mean": 244.61705207824707,
+        "median": 246.54293060302734,
+        "min": 8.195161819458008,
+        "max": 248.92807006835938,
+        "std": 19.177245142822205,
+        "p50": 246.54293060302734,
+        "p90": 247.69484996795654,
+        "p95": 247.82814979553223,
+        "p99": 248.34926843643188,
+        "errors": 0,
+        "total_time": 48.92436766624451,
+        "throughput": 4.087942461809077
+      }
+    },
+    "concurrency": {
+      "concurrency_1": {
+        "inferneo": {
+          "count": 200,
+          "mean": 0.008962154388427734,
+          "p95": 0.009310245513916012,
+          "p99": 0.04162788391113225,
+          "errors": 0,
+          "throughput": 1792437.6068376068
+        },
+        "triton": {
+          "count": 200,
+          "mean": 245.9427845478058,
+          "p95": 247.69597053527832,
+          "p99": 248.18284034729004,
+          "errors": 0,
+          "throughput": 797.342384686965
+        }
+      },
+      "concurrency_4": {
+        "inferneo": {
+          "count": 200,
+          "mean": 0.009002685546875,
+          "p95": 0.009059906005859375,
+          "p99": 0.044951438903808046,
+          "errors": 0,
+          "throughput": 1511460.9009009008
+        },
+        "triton": {
+          "count": 200,
+          "mean": 241.17657899856567,
+          "p95": 247.3530411720276,
+          "p99": 247.67901420593262,
+          "errors": 0,
+          "throughput": 804.1381161448647
+        }
+      },
+      "concurrency_8": {
+        "inferneo": {
+          "count": 200,
+          "mean": 0.009131431579589844,
+          "p95": 0.009310245513916012,
+          "p99": 0.0437712669372553,
+          "errors": 0,
+          "throughput": 1292543.6055469953
+        },
+        "triton": {
+          "count": 200,
+          "mean": 244.0955936908722,
+          "p95": 247.61806726455688,
+          "p99": 248.117573261261,
+          "errors": 0,
+          "throughput": 804.4828350114554
+        }
+      },
+      "concurrency_16": {
+        "inferneo": {
+          "count": 200,
+          "mean": 0.009014606475830078,
+          "p95": 0.009560585021972648,
+          "p99": 0.050153732299804174,
+          "errors": 0,
+          "throughput": 1161857.0637119114
+        },
+        "triton": {
+          "count": 200,
+          "mean": 247.2089409828186,
+          "p95": 248.2343077659607,
+          "p99": 248.69730949401855,
+          "errors": 0,
+          "throughput": 803.3780037101345
+        }
+      }
+    }
+  },
+  "summary": {
+    "latency_comparison": {
+      "inferneo_mean_ms": 0.07197737693786621,
+      "triton_mean_ms": 244.61705207824707,
+      "inferneo_p99_ms": 0.11017084121704035,
+      "triton_p99_ms": 248.34926843643188,
+      "latency_ratio": 3398.526905049769,
+      "inferneo_faster": "True"
+    },
+    "throughput_comparison": {
+      "inferneo_rps": 13699.488837718223,
+      "triton_rps": 4.087942461809077,
+      "throughput_ratio": 3351.194143680695,
+      "inferneo_higher_throughput": true
+    },
+    "reliability_comparison": {
+      "inferneo_errors": 0,
+      "triton_errors": 0,
+      "inferneo_success_rate": 100.0,
+      "triton_success_rate": 100.0
+    }
+  }
+}
