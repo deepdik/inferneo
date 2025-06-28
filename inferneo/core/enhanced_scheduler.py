@@ -1,11 +1,13 @@
 """
-Advanced request scheduler with priority queuing and intelligent batching
+Enhanced Dynamic Batching Scheduler for Inferneo
+
+Advanced request scheduler with intelligent batching, adaptive sizing,
+request coalescing, and GPU utilization optimization.
 """
 
 import asyncio
 import heapq
 import time
-import psutil
 import threading
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple, Callable
@@ -49,7 +51,7 @@ class BatchMetrics:
 
 @dataclass
 class ScheduledRequest:
-    """Request with scheduling metadata"""
+    """Request with enhanced scheduling metadata"""
     request_id: str
     priority: int
     created_at: float
@@ -103,6 +105,7 @@ class GPUMonitor:
     def _estimate_gpu_utilization(self) -> float:
         """Estimate GPU utilization based on system load"""
         try:
+            import psutil
             cpu_percent = psutil.cpu_percent(interval=0.1)
             # Rough estimation: higher CPU usage might indicate GPU usage too
             return min(cpu_percent / 100.0 * 0.8 + 0.2, 0.95)
@@ -110,7 +113,7 @@ class GPUMonitor:
             return 0.5
 
 
-class Scheduler:
+class EnhancedScheduler:
     """
     Enhanced dynamic batching scheduler with adaptive sizing and intelligent coalescing
     """
@@ -160,9 +163,6 @@ class Scheduler:
         # Background tasks
         self._metrics_collection_task: Optional[asyncio.Task] = None
         self._adaptive_sizing_task: Optional[asyncio.Task] = None
-        
-        # Model reference for generation
-        self._current_model = None
     
     async def initialize(self):
         """Initialize the scheduler"""
@@ -173,153 +173,6 @@ class Scheduler:
         self._adaptive_sizing_task = asyncio.create_task(self._adaptive_sizing_loop())
         
         self.logger.info("Enhanced Dynamic Batching Scheduler initialized")
-    
-    async def schedule_generation(self, request: Any, model: Any) -> Any:
-        """
-        Schedule a single generation request (compatibility method for engine)
-        
-        Args:
-            request: GenerationRequest object
-            model: Model to use for generation
-            
-        Returns:
-            GenerationResult
-        """
-        self._current_model = model
-        
-        # Add request to scheduler
-        request_id = await self.add_request(request)
-        
-        # Get next batch (will contain our request)
-        batch = await self.get_next_batch()
-        
-        if not batch:
-            raise RuntimeError("Failed to schedule generation request")
-        
-        # Find our request in the batch
-        our_request = None
-        for req in batch:
-            if req.request_id == request_id:
-                our_request = req
-                break
-        
-        if not our_request:
-            raise RuntimeError("Request not found in batch")
-        
-        # Simulate generation (in real implementation, this would call the model)
-        start_time = time.time()
-        result = await self._generate_with_model(model, request)
-        processing_time = time.time() - start_time
-        
-        # Get GPU utilization
-        gpu_utilization = await self._get_gpu_utilization()
-        memory_usage = 0.6  # Simulated memory usage
-        
-        # Complete batch
-        batch_id = our_request.batch_id
-        await self.complete_batch(batch_id, processing_time, gpu_utilization, memory_usage)
-        
-        # Complete individual request
-        await self.complete_request(
-            request_id, 
-            success=True,
-            processing_time=processing_time,
-            gpu_utilization=gpu_utilization
-        )
-        
-        return result
-    
-    async def schedule_batch_generation(self, requests: List[Any], model: Any) -> List[Any]:
-        """
-        Schedule batch generation requests (compatibility method for engine)
-        
-        Args:
-            requests: List of GenerationRequest objects
-            model: Model to use for generation
-            
-        Returns:
-            List of GenerationResult objects
-        """
-        self._current_model = model
-        results = []
-        
-        # Add all requests to scheduler
-        request_ids = []
-        for request in requests:
-            request_id = await self.add_request(request)
-            request_ids.append(request_id)
-        
-        # Process batches until all requests are completed
-        while request_ids:
-            batch = await self.get_next_batch()
-            
-            if not batch:
-                await asyncio.sleep(0.01)  # Small delay
-                continue
-            
-            # Simulate batch generation
-            start_time = time.time()
-            batch_results = await self._generate_batch_with_model(model, batch)
-            processing_time = time.time() - start_time
-            
-            # Get GPU utilization
-            gpu_utilization = await self._get_gpu_utilization()
-            memory_usage = 0.6  # Simulated memory usage
-            
-            # Complete batch
-            batch_id = batch[0].batch_id if batch else f"batch_{self._batch_id_counter}"
-            await self.complete_batch(batch_id, processing_time, gpu_utilization, memory_usage)
-            
-            # Complete individual requests and collect results
-            for i, scheduled_request in enumerate(batch):
-                await self.complete_request(
-                    scheduled_request.request_id,
-                    success=True,
-                    processing_time=processing_time / len(batch),
-                    gpu_utilization=gpu_utilization
-                )
-                
-                # Remove from pending request IDs
-                if scheduled_request.request_id in request_ids:
-                    request_ids.remove(scheduled_request.request_id)
-                
-                # Add result
-                if i < len(batch_results):
-                    results.append(batch_results[i])
-        
-        return results
-    
-    async def _generate_with_model(self, model: Any, request: Any) -> Any:
-        """Generate with model (placeholder implementation)"""
-        # This is a placeholder - in real implementation, this would call the model
-        # For now, we'll create a dummy result
-        
-        class DummyResult:
-            def __init__(self, request):
-                self.request_id = request.request_id
-                self.text = f"Generated text for: {request.prompt[:50]}..."
-                self.tokens = list(range(len(request.prompt.split())))
-                self.finish_reason = "length"
-                self.usage = {"prompt_tokens": len(request.prompt.split()), "completion_tokens": request.max_tokens}
-        
-        return DummyResult(request)
-    
-    async def _generate_batch_with_model(self, model: Any, batch: List[ScheduledRequest]) -> List[Any]:
-        """Generate batch with model (placeholder implementation)"""
-        results = []
-        for scheduled_request in batch:
-            # Create a dummy request object for generation
-            class DummyRequest:
-                def __init__(self, scheduled_request):
-                    self.request_id = scheduled_request.request_id
-                    self.prompt = f"Prompt for request {scheduled_request.request_id}"
-                    self.max_tokens = scheduled_request.max_tokens
-            
-            dummy_request = DummyRequest(scheduled_request)
-            result = await self._generate_with_model(model, dummy_request)
-            results.append(result)
-        
-        return results
     
     async def add_request(self, request: Any) -> str:
         """
@@ -673,6 +526,23 @@ class Scheduler:
         
         return 0.5  # Default to 50% if no measurements
     
+    def _estimate_tokens(self, request: Any) -> int:
+        """
+        Estimate the number of tokens for a request
+        
+        Args:
+            request: GenerationRequest object
+            
+        Returns:
+            Estimated token count
+        """
+        # Simple estimation based on prompt length and max tokens
+        prompt_tokens = len(request.prompt.split())  # Rough estimate
+        total_tokens = prompt_tokens + request.max_tokens
+        
+        # Apply some safety margin
+        return min(total_tokens * 1.2, self.config.max_waiting_tokens)
+    
     async def _collect_metrics_loop(self):
         """Background task to collect performance metrics"""
         while self._is_running:
@@ -840,4 +710,4 @@ class Scheduler:
     
     async def cleanup(self):
         """Cleanup resources"""
-        await self.stop() 
+        await self.stop()

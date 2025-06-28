@@ -20,7 +20,7 @@ import torch
 from transformers import AutoTokenizer
 
 from .engine import InferneoEngine
-from .scheduler import Scheduler
+from .scheduler import Scheduler, BatchingStrategy
 from .memory_manager import MemoryManager
 from .cache_manager import CacheManager
 from .config import EngineConfig
@@ -79,6 +79,9 @@ class EnhancedEngineConfig(EngineConfig):
     enable_dynamic_batching: bool = True
     enable_speculative_decoding: bool = True
     enable_kv_cache_optimization: bool = True
+    
+    # Batching strategy settings
+    batching_strategy: BatchingStrategy = BatchingStrategy.ADAPTIVE
     
     # Monitoring settings
     enable_performance_monitoring: bool = True
@@ -143,6 +146,11 @@ class EnhancedInferneoEngine(InferneoEngine):
         await self.cache_manager.initialize()
         await self.model_manager.initialize()
         
+        # Set batching strategy from config
+        if self.enhanced_config.enable_dynamic_batching:
+            self.scheduler.set_batching_strategy(self.enhanced_config.batching_strategy)
+            self.logger.info(f"Dynamic batching enabled with strategy: {self.enhanced_config.batching_strategy.value}")
+        
         # Load default model if specified
         if self.enhanced_config.model:
             await self.load_model(self.enhanced_config.model)
@@ -200,13 +208,16 @@ class EnhancedInferneoEngine(InferneoEngine):
         await self.initialize()
         
         # Start background tasks
-        self.metrics_task = asyncio.create_task(self._collect_metrics())
-        self.health_check_task = asyncio.create_task(self._health_check())
+        if self.enhanced_config.enable_performance_monitoring:
+            self._start_monitoring_task()
+        
+        if self.enhanced_config.enable_health_checks:
+            self._start_health_check_task()
         
         self.is_running = True
         self.start_time = time.time()
-        self.logger.info("Enhanced Inferneo Engine started")
-        
+        self.logger.info("Enhanced Inferneo Engine started successfully")
+    
     async def stop(self):
         """Stop the enhanced engine"""
         if not self.is_running:
@@ -214,103 +225,149 @@ class EnhancedInferneoEngine(InferneoEngine):
             
         self.is_running = False
         
-        # Cancel background tasks
-        if hasattr(self, 'metrics_task'):
-            self.metrics_task.cancel()
-        if hasattr(self, 'health_check_task'):
-            self.health_check_task.cancel()
-            
-        # Unload all models
+        # Stop background tasks
+        if hasattr(self, '_monitoring_task'):
+            self._monitoring_task.cancel()
+        if hasattr(self, '_health_check_task'):
+            self._health_check_task.cancel()
+        
+        # Cleanup components
         for model_name in list(self.loaded_models.keys()):
             await self.unload_model(model_name)
-            
-        # Cleanup components
+        
         await self.scheduler.cleanup()
         await self.memory_manager.cleanup()
         await self.cache_manager.cleanup()
         await self.model_manager.cleanup()
         
-        self.logger.info("Enhanced Inferneo Engine stopped")
+        self._executor.shutdown(wait=True)
         
+        self.logger.info("Enhanced Inferneo Engine stopped")
+    
     async def generate(self, prompt: str, model_name: Optional[str] = None, **kwargs) -> GenerationResult:
         """
-        Generate text using the specified model or auto-routed model
+        Generate text using the enhanced engine with dynamic batching
         
         Args:
             prompt: Input prompt
-            model_name: Specific model to use (optional)
+            model_name: Optional model name to use
             **kwargs: Additional generation parameters
             
         Returns:
-            GenerationResult with generated text
+            GenerationResult
         """
         if not self.is_running:
             raise RuntimeError("Engine is not running. Call start() first.")
-            
-        # Determine which model to use
-        target_model = await self._select_model(prompt, model_name)
+        
+        # Select model
+        model = await self._select_model(prompt, model_name)
         
         # Create generation request
-        request = {
-            "prompt": prompt,
-            "model_name": target_model.name,
-            **kwargs
-        }
+        from .engine import GenerationRequest
+        request = GenerationRequest(
+            prompt=prompt,
+            max_tokens=kwargs.get('max_tokens', 100),
+            temperature=kwargs.get('temperature', 0.7),
+            top_p=kwargs.get('top_p', 0.9),
+            top_k=kwargs.get('top_k', 50),
+            stop_tokens=kwargs.get('stop_tokens'),
+            stream=kwargs.get('stream', False),
+            request_id=kwargs.get('request_id', f"req_{int(time.time() * 1000)}")
+        )
         
-        # Generate using the selected model
+        # Add priority if specified
+        if 'priority' in kwargs:
+            request.priority = kwargs['priority']
+        
+        # Use enhanced scheduler for generation
         start_time = time.time()
-        try:
-            result = await self._generate_with_model(target_model, prompt, **kwargs)
-            
-            # Update metrics
-            latency = time.time() - start_time
-            await self._update_model_metrics(target_model.name, latency, len(result.tokens), True)
-            
-            # Record request
-            self._record_request(request, result, latency, target_model.name)
-            
-            return result
-            
-        except Exception as e:
-            # Update metrics for failure
-            latency = time.time() - start_time
-            await self._update_model_metrics(target_model.name, latency, 0, False)
-            
-            self.logger.error(f"Generation failed for model {target_model.name}: {e}")
-            raise
-            
+        result = await self.scheduler.schedule_generation(request, model)
+        processing_time = time.time() - start_time
+        
+        # Update model metrics
+        await self._update_model_metrics(model.name, processing_time, result)
+        
+        return result
+    
     async def generate_batch(self, prompts: List[str], model_name: Optional[str] = None, **kwargs) -> List[GenerationResult]:
-        """Generate text for multiple prompts in batch"""
+        """
+        Generate text for multiple prompts using enhanced batching
+        
+        Args:
+            prompts: List of input prompts
+            model_name: Optional model name to use
+            **kwargs: Additional generation parameters
+            
+        Returns:
+            List of GenerationResult objects
+        """
         if not self.is_running:
             raise RuntimeError("Engine is not running. Call start() first.")
+        
+        # Select model
+        model = await self._select_model(prompts[0] if prompts else "", model_name)
+        
+        # Create generation requests
+        from .engine import GenerationRequest
+        requests = []
+        for i, prompt in enumerate(prompts):
+            request = GenerationRequest(
+                prompt=prompt,
+                max_tokens=kwargs.get('max_tokens', 100),
+                temperature=kwargs.get('temperature', 0.7),
+                top_p=kwargs.get('top_p', 0.9),
+                top_k=kwargs.get('top_k', 50),
+                stop_tokens=kwargs.get('stop_tokens'),
+                stream=kwargs.get('stream', False),
+                request_id=kwargs.get('request_id', f"batch_req_{int(time.time() * 1000)}_{i}")
+            )
             
-        # Use first prompt to determine model if not specified
-        if not model_name:
-            target_model = await self._select_model(prompts[0])
-        else:
-            target_model = self.loaded_models.get(model_name)
-            if not target_model:
-                raise ValueError(f"Model {model_name} not loaded")
-                
-        # Generate batch
+            # Add priority if specified
+            if 'priority' in kwargs:
+                request.priority = kwargs['priority']
+            
+            requests.append(request)
+        
+        # Use enhanced scheduler for batch generation
         start_time = time.time()
-        try:
-            results = await target_model.generate_batch(prompts, **kwargs)
-            
-            # Update metrics
-            latency = time.time() - start_time
-            total_tokens = sum(len(r.tokens) for r in results)
-            await self._update_model_metrics(target_model.name, latency, total_tokens, True)
-            
-            return results
-            
-        except Exception as e:
-            latency = time.time() - start_time
-            await self._update_model_metrics(target_model.name, latency, 0, False)
-            
-            self.logger.error(f"Batch generation failed for model {target_model.name}: {e}")
-            raise
-            
+        results = await self.scheduler.schedule_batch_generation(requests, model)
+        processing_time = time.time() - start_time
+        
+        # Update model metrics
+        for result in results:
+            await self._update_model_metrics(model.name, processing_time / len(results), result)
+        
+        return results
+    
+    def set_batching_strategy(self, strategy: BatchingStrategy):
+        """Set the batching strategy for the scheduler"""
+        self.scheduler.set_batching_strategy(strategy)
+        self.logger.info(f"Batching strategy set to: {strategy.value}")
+    
+    def get_batching_stats(self) -> Dict[str, Any]:
+        """Get batching statistics from the scheduler"""
+        return self.scheduler.get_batching_stats()
+    
+    def get_enhanced_stats(self) -> Dict[str, Any]:
+        """Get comprehensive engine statistics including batching metrics"""
+        base_stats = self.get_stats()
+        batching_stats = self.get_batching_stats()
+        
+        return {
+            **base_stats,
+            "batching": batching_stats,
+            "models_loaded": len(self.loaded_models),
+            "routing_rules": len(self.routing_rules),
+            "ab_tests": len(self.ab_tests),
+            "enhanced_features": {
+                "dynamic_batching": self.enhanced_config.enable_dynamic_batching,
+                "speculative_decoding": self.enhanced_config.enable_speculative_decoding,
+                "kv_cache_optimization": self.enhanced_config.enable_kv_cache_optimization,
+                "performance_monitoring": self.enhanced_config.enable_performance_monitoring,
+                "health_checks": self.enhanced_config.enable_health_checks
+            }
+        }
+    
     async def _select_model(self, prompt: str, model_name: Optional[str] = None) -> BaseModel:
         """Select the appropriate model for the request"""
         # If specific model requested, use it
