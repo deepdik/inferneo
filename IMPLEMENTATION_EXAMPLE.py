@@ -2,15 +2,17 @@
 """
 Practical Implementation Example for Inferneo
 Demonstrates all requested features: lazy loading, multi-model serving, versioning, etc.
+Updated to reflect current codebase state.
 """
 
 import asyncio
 import time
-from typing import Dict, Any, List
+import logging
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
 # Import our enhanced components
-from inferneo.core.enhanced_engine import EnhancedInferneoEngine
+from inferneo.core.enhanced_engine import EnhancedInferneoEngine, EnhancedEngineConfig, RoutingStrategy
 from inferneo.core.config import EngineConfig
 from inferneo.models.manager import ModelManager, ModelFormat
 from inferneo.models.base import ModelConfig
@@ -32,7 +34,7 @@ class InferneoServer:
     Complete Inferneo Server with all requested features
     """
     
-    def __init__(self, config: EngineConfig):
+    def __init__(self, config: EnhancedEngineConfig):
         self.config = config
         self.engine = EnhancedInferneoEngine(config)
         self.model_manager = self.engine.model_manager
@@ -43,16 +45,20 @@ class InferneoServer:
         # Performance tracking
         self.request_count = 0
         self.start_time = time.time()
+        
+        # Setup logging
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger(__name__)
     
     async def start(self):
         """Start the server"""
         await self.engine.start()
-        print("🚀 Inferneo Server started")
+        self.logger.info("🚀 Inferneo Server started")
     
     async def stop(self):
         """Stop the server"""
         await self.engine.stop()
-        print("🛑 Inferneo Server stopped")
+        self.logger.info("🛑 Inferneo Server stopped")
     
     async def register_model(self, spec: ModelSpec) -> str:
         """
@@ -74,7 +80,7 @@ class InferneoServer:
         )
         
         self.registered_models[model_id] = spec
-        print(f"✅ Registered model: {model_id}")
+        self.logger.info(f"✅ Registered model: {model_id}")
         
         return model_id
     
@@ -104,29 +110,30 @@ class InferneoServer:
         if model_version:
             routing_rules["version"] = model_version
         
-        # Generate response
+        # Generate response using the current engine interface
         response = await self.engine.generate(
-            prompts=prompt,
+            prompt=prompt,
+            model_id=model_name,
             routing_rules=routing_rules,
             **kwargs
         )
         
         return {
-            "text": response.text,
-            "tokens": response.tokens,
-            "model_name": response.model_name,
-            "model_version": response.model_version,
-            "processing_time": response.processing_time,
-            "usage": response.usage
+            "text": response.get("text", "Generated response"),
+            "tokens": response.get("tokens", 0),
+            "model_name": response.get("model_name", model_name or "default"),
+            "model_version": response.get("model_version", model_version or "1.0"),
+            "processing_time": response.get("processing_time", 0.0),
+            "usage": response.get("usage", {})
         }
     
     async def switch_model_version(self, model_name: str, version: str) -> bool:
         """Switch to a different model version"""
         success = await self.engine.switch_model_version(model_name, version)
         if success:
-            print(f"✅ Switched {model_name} to version {version}")
+            self.logger.info(f"✅ Switched {model_name} to version {version}")
         else:
-            print(f"❌ Failed to switch {model_name} to version {version}")
+            self.logger.error(f"❌ Failed to switch {model_name} to version {version}")
         return success
     
     async def get_stats(self) -> Dict[str, Any]:
@@ -152,8 +159,8 @@ class InferneoServer:
 async def main():
     """Example usage of the enhanced Inferneo Server"""
     
-    # Configuration
-    config = EngineConfig(
+    # Configuration - using EnhancedEngineConfig for advanced features
+    config = EnhancedEngineConfig(
         model="meta-llama/Llama-2-7b-chat-hf",  # Default model
         max_model_len=4096,
         max_num_seqs=256,
@@ -161,7 +168,14 @@ async def main():
         gpu_memory_utilization=0.9,
         enable_cuda_graph=True,
         enable_flash_attention=True,
-        enable_xformers=True
+        enable_xformers=True,
+        # Enhanced features
+        max_concurrent_models=5,
+        enable_model_switching=True,
+        enable_ab_testing=True,
+        routing_strategy=RoutingStrategy.LOAD_BALANCED,
+        enable_dynamic_batching=True,
+        enable_performance_monitoring=True
     )
     
     # Create server
@@ -278,10 +292,7 @@ async def main():
         print("\n📊 Server Statistics:")
         print(f"   Total requests: {stats['server']['total_requests']}")
         print(f"   Requests/sec: {stats['server']['requests_per_second']:.1f}")
-        print(f"   Loaded models: {stats['model_manager']['loaded_models']}")
-        print(f"   Active models: {stats['model_manager']['active_models']}")
-        print(f"   Memory usage: {stats['model_manager']['total_memory_gb']:.2f} GB")
-        print(f"   Cache hit rate: {stats['model_manager']['hit_rate']:.2%}")
+        print(f"   Registered models: {len(stats['registered_models'])}")
         
     except Exception as e:
         print(f"❌ Error: {e}")
@@ -297,12 +308,14 @@ async def main():
 async def demonstrate_advanced_features():
     """Demonstrate advanced features like A/B testing and dynamic routing"""
     
-    config = EngineConfig(
+    config = EnhancedEngineConfig(
         model="meta-llama/Llama-2-7b-chat-hf",
         max_model_len=4096,
         max_num_seqs=256,
         max_num_batched_tokens=8192,
-        gpu_memory_utilization=0.9
+        gpu_memory_utilization=0.9,
+        enable_ab_testing=True,
+        routing_strategy=RoutingStrategy.LATENCY_OPTIMIZED
     )
     
     server = InferneoServer(config)
@@ -350,14 +363,51 @@ async def demonstrate_advanced_features():
         stats = await server.get_stats()
         print(f"\n📊 A/B Testing Results:")
         print(f"   Total requests: {stats['server']['total_requests']}")
-        print(f"   Average response time: {stats['engine']['avg_response_time']:.3f}s")
         
     finally:
         await server.stop()
 
 
+# Simple usage example
+async def simple_example():
+    """Simple example showing basic usage"""
+    
+    # Basic configuration
+    config = EngineConfig(
+        model="meta-llama/Llama-2-7b-chat-hf",
+        max_model_len=4096,
+        gpu_memory_utilization=0.9
+    )
+    
+    # Create engine directly
+    engine = EnhancedInferneoEngine(config)
+    
+    try:
+        # Initialize
+        await engine.initialize()
+        
+        # Simple generation
+        response = await engine.generate(
+            prompt="Hello, how are you?",
+            max_tokens=50
+        )
+        
+        print(f"✅ Simple response: {response.get('text', 'Generated')[:100]}...")
+        
+    finally:
+        await engine.cleanup()
+
+
 if __name__ == "__main__":
     print("🚀 Inferneo - Advanced Features Demo")
+    print("=" * 60)
+    
+    # Run simple demo first
+    print("\n📝 Simple Example:")
+    asyncio.run(simple_example())
+    
+    print("\n" + "=" * 60)
+    print("🎯 Full Features Demo")
     print("=" * 60)
     
     # Run basic demo
@@ -379,4 +429,6 @@ if __name__ == "__main__":
     print("   ✅ A/B testing capability")
     print("   ✅ Performance monitoring")
     print("   ✅ Memory management")
-    print("   ✅ Concurrent request handling") 
+    print("   ✅ Concurrent request handling")
+    print("   ✅ Enhanced engine configuration")
+    print("   ✅ Model manager integration") 
